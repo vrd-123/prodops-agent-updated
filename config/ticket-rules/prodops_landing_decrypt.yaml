@@ -1,0 +1,106 @@
+# ============================================================================
+# ProdOps Ticket Rule: Landing Decrypt (ng-landing-decrypt)
+# ============================================================================
+# Team: Transporters | Service: ng-landing-decrypt-service
+# Handles: PGP/GPG decryption, 7zip/ZIP extraction, DLQ processing, KEDA scaling
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - ng-landing-decrypt
+  - landing-decrypt
+  - landing decrypt
+  - PGP
+  - GPG
+  - decrypt
+  - DLQ
+  - dead letter
+  - file ingestion
+  - 7zip
+  - 7z
+  - ZIP extraction
+  - KEDA
+  - ScaledJob
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check CloudWatch for ng-landing-decrypt DLQ alarms"
+    details: "Navigate to CloudWatch → Alarms → filter 'ng-landing-decrypt-dlq'. Note alarm state, trigger time, and metric threshold."
+    tools: [CloudWatch, AWS Console]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4714987523"
+  - step: 2
+    action: "Identify failed file(s) in DLQ"
+    details: "Check the DLQ S3 bucket for failed files. Note the S3 key, error message in metadata, and timestamp of failure."
+    tools: [AWS S3, AWS Console]
+  - step: 3
+    action: "Check pod logs in K8s for GPG/7zip errors"
+    details: "Run: kubectl logs -n landing-decrypt -l app=ng-landing-decrypt --tail=500. Look for GPG decrypt errors, 7zip extraction failures, or OOM kills."
+    tools: [kubectl, K8s]
+  - step: 4
+    action: "Verify PGP key expiry and availability in Secrets Manager"
+    details: "Check AWS Secrets Manager for the PGP key used by this client. Verify key hasn't expired and is accessible by the service IAM role."
+    tools: [AWS Secrets Manager]
+  - step: 5
+    action: "For ZIP/7z failures: check file size vs pod memory limits"
+    details: "Compare the failed file size against the KEDA ScaledJob memory limits. Large files may exceed pod resource limits."
+    tools: [kubectl, KEDA config]
+  - step: 6
+    action: "If DLQ redrive needed: follow the recovery runbook"
+    details: "Use the 'Recovering from ng-landing-decrypt Errors' runbook to redrive messages from DLQ back to the processing queue."
+    tools: [AWS SQS, Runbook]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3208675422"
+  - step: 7
+    action: "If KEDA scaling issue: check ScaledJob configuration"
+    details: "Verify KEDA ScaledJob config: polling interval, max replicas, trigger thresholds. Check if KEDA operator pods are healthy."
+    tools: [kubectl, KEDA]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5006098448"
+  - step: 8
+    action: "Check if customer file format changed"
+    details: "If recurring failures for one client, check if the customer changed their file format (encryption method, archive format, file naming convention)."
+    tools: [Ticket history, Client docs]
+  - step: 9
+    action: "Create or update PRODOPS ticket with resolution details"
+    details: "Document root cause, steps taken, and resolution in the PRODOPS ticket. Include file names, error messages, and config changes made."
+    tools: [Jira]
+  - step: 10
+    action: "Verify files processed successfully after fix"
+    details: "Monitor CloudWatch and pod logs to confirm files are now processing without errors. Check destination S3 bucket for output files."
+    tools: [CloudWatch, AWS S3, kubectl]
+
+knowledge_links:
+  - title: "K8s Landing Decrypt Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4714987523"
+    description: "Operational runbook for the K8s-based landing decrypt service including KEDA scaling and troubleshooting."
+  - title: "Recovering from ng-landing-decrypt Errors"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3208675422"
+    description: "Step-by-step DLQ recovery and file reprocessing procedures."
+  - title: "Lambda vs K8s Landing Decrypt"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4980539427"
+    description: "Architecture comparison and migration context between Lambda and K8s implementations."
+  - title: "KEDA with Landing-Decrypt"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5006098448"
+    description: "KEDA ScaledJob configuration, autoscaling behavior, and tuning parameters."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-landing-decrypt-service"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

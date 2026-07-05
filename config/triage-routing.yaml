@@ -1,0 +1,92 @@
+# ============================================================================
+# ProdOps Triage Routing Configuration
+# ============================================================================
+# Path: config/triage-routing.yaml
+# Read by: triage-agent, ticket-triage/SKILL.md
+#
+# Defines client access classification and default handler assignment.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Ticket Classification Categories
+# ---------------------------------------------------------------------------
+categories:
+  customer_breakage:
+    label: "Customer Breakage"
+    description: "Customer-facing impact — data not loading, reports broken, API errors affecting clients"
+    keywords:
+      - customer
+      - client
+      - user-facing
+      - production impact
+      - data not loading
+      - reports broken
+      - API error
+      - service unavailable
+
+  internal_breakage:
+    label: "Internal Breakage"
+    description: "Internal systems/tooling issues — pipeline failures, infra problems, monitoring gaps"
+    keywords:
+      - pipeline failure
+      - infrastructure
+      - monitoring
+      - internal tool
+      - CI/CD
+      - deployment failure
+      - cluster issue
+      - pod crash
+
+  enhancement:
+    label: "Enhancement"
+    description: "Improvements, new capabilities, process changes, feature requests"
+    keywords:
+      - enhancement
+      - improvement
+      - feature request
+      - new capability
+      - process change
+      - optimization
+
+# ---------------------------------------------------------------------------
+# Client Access Classification
+# ---------------------------------------------------------------------------
+# Onshore-only: Only onshore team members can access this client's data/systems
+# Offshore-accessible: Both onshore and offshore team members can work on these
+# ---------------------------------------------------------------------------
+onshore_only_clients:
+  - "Cambia"
+  - "Highmark"
+  # Add more clients as needed — these are placeholders
+  # The actual list should be maintained by the ProdOps team lead
+
+offshore_accessible_clients:
+  - "BCBSMA"
+  - "Gainwell"
+  - "Inovalon"
+  - "Cotiviti"
+  # Add more clients as needed
+
+# ---------------------------------------------------------------------------
+# Default Handler Assignment
+# ---------------------------------------------------------------------------
+routing:
+  onshore_default:
+    name: "Stephen"
+    note: "Default handler for onshore-only client tickets"
+
+  offshore_default:
+    name: "Deepak"
+    note: "Default handler for offshore-accessible client tickets"
+
+  unknown_client:
+    action: "flag_for_manual_review"
+    note: "If client cannot be identified, flag for manual triage"
+
+  security_override:
+    action: "escalate_to_security"
+    note: "Security-flagged tickets bypass normal routing"
+
+  p0_override:
+    action: "escalate_to_swat"
+    note: "P0 tickets go to SWAT on-call regardless of client routing"

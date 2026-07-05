@@ -1,0 +1,93 @@
+# ============================================================================
+# ProdOps Ticket Rule: Data Ingestion API
+# ============================================================================
+# Team: Transporters | Service: ng-data-ingestion-api
+# Handles: API Gateway, WAF, mTLS, Kinesis/Firehose delivery, REST ingestion
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - data-ingestion-api
+  - data ingestion api
+  - ng-data-ingestion
+  - API Gateway
+  - Kinesis
+  - Firehose
+  - WAF
+  - mTLS
+  - certificate
+  - REST ingestion
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check CloudWatch for API Gateway 4xx/5xx error rates"
+    details: "Navigate to CloudWatch → Metrics → API Gateway. Check 4XXError and 5XXError rates for the data ingestion API stage."
+    tools: [CloudWatch, AWS Console]
+  - step: 2
+    action: "Check Lambda function logs for invocation errors or timeouts"
+    details: "Open CloudWatch Logs → /aws/lambda/ng-data-ingestion. Look for timeout errors, handler exceptions, or cold start issues."
+    tools: [CloudWatch Logs]
+  - step: 3
+    action: "For WAF blocks: check WAF rules, IP whitelisting, request body size"
+    details: "Check AWS WAF → Web ACLs for blocked requests. Review rule groups, IP sets, and body size limits. Cross-reference with client IP."
+    tools: [AWS WAF]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5743247363"
+  - step: 4
+    action: "For mTLS failures: verify certificate chain, expiry, CA trust store"
+    details: "Check the mTLS certificate expiry date. Verify the full certificate chain is valid and the CA is in the API Gateway trust store."
+    tools: [openssl, AWS Certificate Manager]
+  - step: 5
+    action: "For Kinesis/Firehose delivery failures: check stream status and S3 permissions"
+    details: "Check Kinesis Data Firehose delivery stream status. Verify S3 destination permissions and KMS key access for encrypted buckets."
+    tools: [AWS Kinesis, AWS S3]
+  - step: 6
+    action: "For throttling: check API Gateway throttle limits and Lambda concurrency"
+    details: "Review API Gateway usage plan throttle settings. Check Lambda reserved/provisioned concurrency limits."
+    tools: [API Gateway, Lambda config]
+  - step: 7
+    action: "Test endpoint with curl/Postman (mTLS cert required)"
+    details: "Use curl with client cert: curl --cert client.pem --key client-key.pem https://api-endpoint/ingest. Verify 200 response."
+    tools: [curl, Postman]
+  - step: 8
+    action: "If client-specific: check client's firewall, proxy, and DNS settings"
+    details: "If issue is client-specific, coordinate with client IT to verify their firewall rules, proxy configuration, and DNS resolution."
+    tools: [Client coordination]
+  - step: 9
+    action: "Create or update PRODOPS ticket with resolution details"
+    details: "Document: API endpoint, error codes, client info, root cause, and fix applied."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Data Ingestion API Design"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3598745702"
+    description: "Architecture design for the REST-based data ingestion API including API Gateway and Kinesis pipeline."
+  - title: "Data Ingestion API Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3598745685"
+    description: "Operational runbook for troubleshooting API Gateway, Lambda, and Firehose issues."
+  - title: "Cambia WAF Investigation"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5743247363"
+    description: "Investigation findings for WAF-related ingestion failures with Cambia client."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-data-ingestion-api"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

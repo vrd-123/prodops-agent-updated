@@ -1,0 +1,11 @@
+---
+description: "Solution agent response format."
+globs: ["**"]
+alwaysApply: true
+---
+# Response Format
+Use the SOLUTION REPORT format from agent.md.
+- Related ticket links ONLY (no detailed summaries)
+- Solution steps WITH source URLs
+- "No related issues found" when nothing matches
+- NEVER fabricate links or root causes

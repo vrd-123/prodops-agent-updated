@@ -1,0 +1,28 @@
+---
+description: "Defines when and how the main agent consults subagents."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Orchestration Hooks
+
+## When to consult subagents
+The main agent invokes subagents at specific workflow steps. Each subagent produces a structured report; the main agent integrates all reports into a single ticket comment.
+
+| Step | Hook | Subagent | What it returns |
+|------|------|----------|-----------------|
+| 2 | validation | validator-agent | Checklist results: fields present/missing, completeness score |
+| 3 | triage | triage-agent | Classification, client, access type, routing, assignment |
+| 4 | solution | solution-agent | Related ticket links, solution steps with sources |
+| 5 | judge | judge-agent | Quality scorecard, pass/fail, improvement suggestions |
+
+## How to consult
+1. Build the consultation prompt using `.cursor/skills/consultation-prompts/SKILL.md`.
+2. Pass the prompt to the subagent.
+3. Receive the subagent's structured report.
+4. If judge returns FAIL (score < 6.0) → re-run solution step with judge feedback (max 2 retries).
+5. Integrate all reports into the final comment format defined in agent.md.
+
+## Subagent isolation
+- Subagents do NOT see each other's output unless explicitly passed by the main agent.
+- Subagents are read-only (see `000-subagent-read-only.mdc`).

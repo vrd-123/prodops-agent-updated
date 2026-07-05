@@ -1,0 +1,8 @@
+---
+description: "Judge agent scorecard format."
+globs: ["**"]
+alwaysApply: true
+---
+# Response Format
+Use the JUDGE SCORECARD format from agent.md.
+Include: per-dimension scores, total, PASS/FAIL verdict, improvement suggestions.

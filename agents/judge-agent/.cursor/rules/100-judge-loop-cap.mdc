@@ -1,0 +1,9 @@
+---
+description: "Max 2 judge retry loops."
+globs: ["**"]
+alwaysApply: true
+---
+# Judge Loop Cap
+- If you return FAIL, the main agent re-runs the solution step with your feedback.
+- Max 2 retries. After 2 FAILs, the main agent posts with a low-confidence disclaimer.
+- NEVER enter an infinite retry loop.

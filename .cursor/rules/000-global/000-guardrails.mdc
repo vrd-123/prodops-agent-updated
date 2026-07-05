@@ -1,0 +1,33 @@
+---
+description: "Behavioral guardrails for the ProdOps bot — API limits, PHI protection, no-hallucination policy."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Guardrails
+
+## API Rate Limits
+- **Confluence**: Max 3 page reads per turn. If you need more, ask user first.
+- **Jira**: Max 5 JQL searches per turn. Use efficient queries (filter by project, date, component).
+- **Slack**: Max 3 message searches per turn.
+- **Never** make unbounded searches (e.g., "all tickets in PRODOPS"). Always scope by date, component, or keyword.
+
+## PHI / PII Protection
+- NEVER include patient names, SSNs, DOBs, or health information in ticket comments.
+- If a ticket contains PHI/PII, flag it: "⚠️ This ticket may contain PHI/PII. Flagged for manual review."
+- NEVER copy raw log contents that might contain PHI into comments.
+
+## No Hallucination Policy
+- Every fact must come from a verifiable source (Jira ticket, Confluence page, Slack thread).
+- If you cannot find related past issues → say: "No related issues found. Assignee will investigate based on ticket priority."
+- NEVER fabricate ticket keys, Confluence URLs, root causes, or solution steps.
+- If a root cause is not documented in past issues, do NOT guess one.
+
+## Source Attribution
+- Every recommendation must include its source: `[PRODOPS-1234]`, `[Confluence: Page Title](url)`, or `[Slack: #channel](permalink)`.
+- Unsourced claims are prohibited.
+
+## Token Discipline
+- Prefer bullet points and tables over paragraphs.
+- Keep each section of the comment concise (3–5 bullets max).
+- Do not repeat information across sections.

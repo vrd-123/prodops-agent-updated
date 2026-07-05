@@ -1,0 +1,93 @@
+# ============================================================================
+# ProdOps Ticket Rule: Observability
+# ============================================================================
+# Team: Platform / SRE | Service: abacus-otel-instrumentation
+# Handles: OpenTelemetry, Grafana, metrics, tracing, alerts, DORA metrics
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - observability
+  - OpenTelemetry
+  - OTel
+  - telemetry
+  - Grafana
+  - dashboard
+  - metrics
+  - tracing
+  - alert
+  - monitoring
+  - DORA
+  - instrumentation
+
+owning_team:
+  name: "Platform / SRE"
+  slack_channel: "#sre-oncall"
+  oncall_rotation: "SRE On-Call"
+  escalation_contact: "SRE Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Check OTel Collector health and pod status"
+    details: "Run: kubectl get pods -n observability | grep otel-collector. Verify all collector pods are Running. Check for OOM kills or restarts."
+    tools: [kubectl]
+  - step: 2
+    action: "Verify metric pipeline data flow end-to-end"
+    details: "Trace data flow: application → OTel SDK → OTel Collector → backend (Grafana/Prometheus). Check each hop for data loss or lag."
+    tools: [kubectl logs, Grafana, Prometheus]
+  - step: 3
+    action: "Check Grafana dashboard and alerting"
+    details: "Open Grafana → Dashboards → search for the affected dashboard. Check if data sources are connected and panels are rendering. Verify alert rules are active."
+    tools: [Grafana UI]
+  - step: 4
+    action: "Verify OpsGenie integration and alert routing"
+    details: "Check OpsGenie → Integrations → Grafana. Verify alert routing rules are sending to the correct team. Check for suppressed or expired alerts."
+    tools: [OpsGenie, Grafana]
+  - step: 5
+    action: "Check alert routing rules and notification policies"
+    details: "Review Grafana → Alerting → Notification policies. Verify contact points, silence rules, and grouping configuration."
+    tools: [Grafana Alerting]
+  - step: 6
+    action: "For missing metrics: verify service instrumentation"
+    details: "Check if the affected service has OTel SDK instrumentation enabled. Verify the OTEL_EXPORTER_OTLP_ENDPOINT environment variable is set correctly."
+    tools: [kubectl describe, Application config]
+  - step: 7
+    action: "For false alerts: adjust thresholds and evaluation intervals"
+    details: "Review alert rule query, threshold, and evaluation interval. Adjust based on baseline metrics and acceptable noise levels."
+    tools: [Grafana Alert Rules]
+  - step: 8
+    action: "Document changes and update PRODOPS ticket"
+    details: "Record: affected dashboard/alert, root cause, changes made (threshold adjustments, routing fixes, instrumentation updates), and verification."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Unified Telemetry Pipeline Design"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5442863121"
+    description: "Architecture design for the unified OTel-based telemetry pipeline including collection, processing, and storage."
+  - title: "Instrumenting Services in NextGen Clusters"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5590024193"
+    description: "How-to guide for adding OTel instrumentation to NextGen services including SDK setup and exporter configuration."
+  - title: "Centralized Monitoring Platform"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5176885318"
+    description: "Architecture and configuration for the centralized Grafana/Prometheus monitoring platform."
+  - title: "Alerts Configuration"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/2400026673"
+    description: "Standard alert configuration patterns, threshold guidelines, and notification routing setup."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/abacus-otel-instrumentation"
+  branch_pattern: "feature/*"
+  base_branch: "main"

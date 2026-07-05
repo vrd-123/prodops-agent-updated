@@ -1,0 +1,23 @@
+---
+description: "Every agent response must invoke the prodops-workflow-gate skill. No exceptions."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Workflow Gate Invocation
+
+## Rule
+Every response from the main agent MUST follow the `prodops-workflow-gate` skill (`.cursor/skills/prodops-workflow-gate/SKILL.md`).
+
+## Steps (always in order):
+0. Greeting (first message only)
+1. Ticket Intake
+2. Validation (consult validator-agent)
+3. Triage (consult triage-agent)
+4. Solution Search (consult solution-agent)
+5. Judge (consult judge-agent)
+6. Comment (format and post)
+
+## No partial runs:
+- If the user asks "just validate this ticket," still run Steps 1–6 internally but only surface the validation section in the comment.
+- Internal steps are never skipped; only the visible output may be scoped.

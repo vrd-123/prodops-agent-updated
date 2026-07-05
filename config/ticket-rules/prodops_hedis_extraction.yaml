@@ -1,0 +1,95 @@
+# ============================================================================
+# ProdOps Ticket Rule: HEDIS Extraction (SAM / Inovalon / Cotiviti)
+# ============================================================================
+# Team: Data Solutions
+# Path: config/ticket-rules/prodops_hedis_extraction.yaml
+
+keywords:
+  - HEDIS
+  - hedis
+  - extraction engine
+  - SAM
+  - Inovalon
+  - Cotiviti
+  - extract generation
+  - outbound SAM
+  - Jobs API
+
+owning_team:
+  name: "Data Solutions"
+  slack_channel: "#data-solutions-oncall"
+  oncall_rotation: "Data Solutions On-Call"
+  escalation_contact: "Data Solutions Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Check extraction engine job status"
+    details: "Query the Jobs API for the failed extraction job. Note job ID, status, error message."
+    tools: [Jobs API, Databricks]
+  - step: 2
+    action: "Review Databricks workflow logs"
+    details: "Check the Databricks workflow run that executes the extraction pipeline. Look for task failures."
+    tools: [Databricks]
+  - step: 3
+    action: "Verify SAM data output format"
+    details: "Check that SAM output files match the expected format (column order, data types, encoding)."
+    tools: [Databricks, S3]
+  - step: 4
+    action: "Check Jobs API for job status"
+    details: "Query the Jobs API endpoint for detailed job execution logs and error traces."
+    tools: [Jobs API]
+  - step: 5
+    action: "For Inovalon failures: validate extract format"
+    details: "Verify Inovalon-specific extract format requirements: file naming, delimiters, header row."
+    tools: [Databricks]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4205903896"
+  - step: 6
+    action: "For Cotiviti failures: validate extract format"
+    details: "Verify Cotiviti-specific extract format requirements: different schema than Inovalon."
+    tools: [Databricks]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4661051393"
+  - step: 7
+    action: "Check run log for extraction rule errors"
+    details: "Review extraction rule execution logs for measure-specific errors or data quality issues."
+    tools: [Databricks]
+  - step: 8
+    action: "Retry failed extraction job"
+    details: "After fixing the root cause, re-trigger the extraction job via Jobs API or Databricks."
+    tools: [Jobs API, Databricks]
+  - step: 9
+    action: "Document resolution in ticket"
+    details: "Record root cause, affected measures, fix applied, and output validation results."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "HEDIS Extraction Engine PRD"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/5647859722"
+    description: "Product requirements for the HEDIS extraction engine including measure coverage."
+  - title: "Extraction Engine Framework"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DD/pages/4419911703"
+    description: "Technical framework for extraction engine: architecture, data flow, rule engine design."
+  - title: "HEDIS SAM Data"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/5690654724"
+    description: "SAM data format specifications, output schema, and delivery requirements."
+  - title: "Inovalon SAM Requirements"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4205903896"
+    description: "Inovalon-specific SAM extract format, file naming, and delivery specifications."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-pipelines-example"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

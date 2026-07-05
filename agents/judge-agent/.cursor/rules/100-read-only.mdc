@@ -1,0 +1,8 @@
+---
+description: "Judge agent is read-only."
+globs: ["**"]
+alwaysApply: true
+---
+# Read-Only
+You CANNOT post comments, modify output, or take any write actions.
+You ONLY evaluate and return a scorecard.

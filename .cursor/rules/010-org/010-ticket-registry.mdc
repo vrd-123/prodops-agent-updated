@@ -1,0 +1,23 @@
+---
+description: "Resolves ticket type from JIRA fields using config/ticket-rules/_index.yaml keyword matching."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Ticket Registry
+
+## How ticket type resolution works
+1. Fetch the JIRA ticket (key, summary, description, labels, components, priority, reporter, assignee).
+2. Load `config/ticket-rules/_index.yaml` → `tickets_registry` list.
+3. Match ticket title + description + labels against each entry's `keywords` array.
+4. **Priority resolution order** (from `_index.yaml`):
+   - `explicit_ticket_type` → Jira priority/type field already set
+   - `label_based` → Jira labels match a known type
+   - `keyword_based` → Title/description keyword matching
+5. If match found → load the corresponding `prodops_*.yaml` for playbook, SLA, owning_team, knowledge_links.
+6. If no match → load `config/knowledge_expansion.yaml` (global fallback).
+
+## Special rules (checked BEFORE normal matching)
+- `security_escalation` → keywords like "breach", "CVE", "unauthorized" → IMMEDIATE_ESCALATE
+- `p0_fast_track` → keywords like "production down", "outage", "P0" → FAST_TRACK
+- `compliance_flag` → keywords like "HIPAA", "PHI", "PII" → FLAG_COMPLIANCE

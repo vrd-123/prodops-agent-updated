@@ -1,0 +1,103 @@
+# ============================================================================
+# ProdOps Ticket Rule: Infrastructure (EKS / Terraform / K8s)
+# ============================================================================
+# Team: Platform / DevOps
+# Path: config/ticket-rules/prodops_infrastructure.yaml
+
+keywords:
+  - infrastructure
+  - ng-infrastructure
+  - terraform
+  - EKS
+  - kubernetes
+  - k8s
+  - pod
+  - node
+  - helm
+  - Helmsman
+  - Karpenter
+  - VPC
+  - security group
+  - crashloop
+  - CrashLoopBackOff
+
+owning_team:
+  name: "Platform / DevOps"
+  slack_channel: "#devops-oncall"
+  oncall_rotation: "DevOps On-Call"
+  escalation_contact: "DevOps Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check EKS cluster health"
+    details: "Verify EKS cluster status via AWS Console or kubectl cluster-info. Check for control plane events."
+    tools: [AWS Console, kubectl]
+  - step: 2
+    action: "Check node status"
+    details: "Run kubectl get nodes — look for NotReady, SchedulingDisabled, or resource pressure conditions."
+    tools: [kubectl]
+  - step: 3
+    action: "Investigate CrashLoopBackOff pods"
+    details: "kubectl get pods --all-namespaces | grep CrashLoop. Check logs with kubectl logs <pod> --previous."
+    tools: [kubectl]
+  - step: 4
+    action: "Review Terraform plan/apply logs"
+    details: "Check CI/CD pipeline for recent terraform apply runs. Look for failed resources, state lock issues."
+    tools: [GitLab CI, Terraform]
+  - step: 5
+    action: "Verify security groups and VPC config"
+    details: "Check security group rules, VPC endpoints, NACLs for connectivity issues between services."
+    tools: [AWS Console, Terraform]
+  - step: 6
+    action: "Check Karpenter provisioner config"
+    details: "For node scaling issues: verify Karpenter NodePool config, instance types, capacity limits."
+    tools: [kubectl, Karpenter]
+  - step: 7
+    action: "Check Helm/Helmsman deployment logs"
+    details: "For Helm deploy failures: check Helmsman desired-state logs, chart version compatibility."
+    tools: [Helmsman, Helm]
+  - step: 8
+    action: "Investigate network issues"
+    details: "Check VPC endpoints, DNS resolution, cross-account peering, NAT gateway status."
+    tools: [AWS Console, kubectl]
+  - step: 9
+    action: "Run terraform plan (dry run)"
+    details: "Execute terraform plan to identify drift between desired and actual infrastructure state."
+    tools: [Terraform]
+  - step: 10
+    action: "Document resolution in ticket"
+    details: "Record root cause, fix applied, and any follow-up actions needed."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "EKS Troubleshooting Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/2968354817"
+    description: "Common EKS issues: node failures, pod scheduling, networking, IAM/IRSA problems."
+  - title: "EKS Upgrade Procedure"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4538761218"
+    description: "Step-by-step EKS version upgrade process with rollback procedures."
+  - title: "NG Infrastructure Restructuring Plan"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/5379129365"
+    description: "Infrastructure modularization plan, Terraform module structure, dependency graph."
+  - title: "Skates Troubleshooting"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/2625961987"
+    description: "Skates K8s deployment troubleshooting: permissions, connectivity, pod issues."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-infrastructure"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

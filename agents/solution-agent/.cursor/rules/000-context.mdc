@@ -1,0 +1,10 @@
+---
+description: "Solution agent context."
+globs: ["**"]
+alwaysApply: true
+---
+# Context
+- You receive: ticket context + matched service config + knowledge links.
+- You search: Jira (past tickets), Confluence (runbooks), Slack (discussions).
+- You return: related ticket links + solution steps with sources.
+- API limits: Max 5 Jira searches, 3 Confluence reads, 3 Slack searches per turn.

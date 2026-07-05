@@ -1,0 +1,111 @@
+# ============================================================================
+# ProdOps Ticket Rule: Airbyte (ng-airbyte-helm)
+# ============================================================================
+# Team: Transporters | Service: ng-airbyte-helm
+# Handles: CDC sync, connector failures, Debezium, MSSQL, destination-s3
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - airbyte
+  - airbyte-helm
+  - CDC
+  - connector
+  - Debezium
+  - MSSQL
+  - sync failure
+  - connection broken
+  - saved offset
+  - workload
+  - destination-s3
+  - source-mssql
+  - normalization
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check Airbyte UI for connection status and recent sync results"
+    details: "Open Airbyte UI → Connections. Identify the failed connection, note source/destination type, last successful sync time, and error message."
+    tools: [Airbyte UI]
+  - step: 2
+    action: "Identify failed connector — note source/destination type and error"
+    details: "Click into the failed connection. Check the job logs for the specific error. Common errors: offset expired, connection refused, auth failure, OOM."
+    tools: [Airbyte UI, Job logs]
+  - step: 3
+    action: "For CDC offset expired: clear saved state and run manual sync"
+    details: "If 'saved offset is beyond available' error: go to Connection Settings → Advanced → Clear saved state → trigger manual sync. Follow the CDC Offset Error resolution guide."
+    tools: [Airbyte UI]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5344165905"
+  - step: 4
+    action: "For connection broken: check network, firewall, VPN tunnel status"
+    details: "Verify network connectivity between Airbyte pods and the source database. Check VPN tunnel status, security group rules, and DNS resolution."
+    tools: [kubectl, AWS Console, VPN dashboard]
+  - step: 5
+    action: "For workload failed: check node resources and scale connector pods"
+    details: "Check if connector pods were OOM-killed or evicted. Review node resource utilization. Scale connector replicas or increase resource limits if needed."
+    tools: [kubectl, K8s dashboard]
+  - step: 6
+    action: "Check Airbyte pod logs for detailed error traces"
+    details: "Run: kubectl logs -n airbyte -l app=airbyte --tail=500. Look for Java exceptions, connection timeouts, or Debezium heartbeat failures."
+    tools: [kubectl]
+  - step: 7
+    action: "For Debezium errors: check heartbeat timeout, WAL retention, snapshot mode"
+    details: "Debezium-specific: verify heartbeat interval config, check PostgreSQL WAL retention or MSSQL CDC retention, confirm snapshot mode is correct."
+    tools: [Airbyte config, Database admin]
+  - step: 8
+    action: "For destination-s3 failures: check S3 permissions and bucket policy"
+    details: "Verify the Airbyte IAM role has PutObject/GetObject permissions on the destination S3 bucket. Check bucket policy and KMS key access."
+    tools: [AWS IAM, AWS S3]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/4347887624"
+  - step: 9
+    action: "If v2 workspace issue: check config poller sync status"
+    details: "For Airbyte v2 workspaces, verify the config poller is syncing workspace secrets correctly. Check for tenant isolation issues."
+    tools: [kubectl, Config poller logs]
+    reference: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/5522456601"
+  - step: 10
+    action: "Create or update PRODOPS ticket with resolution details"
+    details: "Document: connection name, source/destination types, error message, root cause, fix applied, and verification status."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Airbyte Runbook"
+    url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/3664052229"
+    description: "Primary operational runbook for Airbyte connector troubleshooting and management."
+  - title: "Airbyte Support Process"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4571922453"
+    description: "Support escalation process, SLA targets, and vendor engagement for Airbyte issues."
+  - title: "Resolving CDC Offset Error"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5344165905"
+    description: "Step-by-step guide for resolving 'saved offset beyond available' CDC errors."
+  - title: "Airbyte Components v2"
+    url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/5522456601"
+    description: "Airbyte v2 workspace architecture, multi-tenant isolation, and config poller integration."
+  - title: "Airbyte Implementers Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/5071241228"
+    description: "Comprehensive implementer's guide for Airbyte setup, connector configuration, and testing."
+  - title: "Comparative Analysis: destination-s3"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/4347887624"
+    description: "Performance comparison and configuration best practices for destination-s3 connector."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-airbyte-helm"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

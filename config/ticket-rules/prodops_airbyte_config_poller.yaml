@@ -1,0 +1,91 @@
+# ============================================================================
+# ProdOps Ticket Rule: Airbyte Config Poller
+# ============================================================================
+# Team: Transporters | Service: ng-airbyte-config-sync
+# Handles: Config sync, secret resolution, OAuth token refresh, workspace config
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - config-poller
+  - config poller
+  - config-sync
+  - ng-airbyte-config
+  - workspace config
+  - secret sync
+  - OAuth
+  - workspace secrets
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check config poller pod health"
+    details: "Run: kubectl get pods -n airbyte | grep config-poller. Verify pod is Running and not in CrashLoopBackOff."
+    tools: [kubectl]
+  - step: 2
+    action: "Check pod logs for secret resolution errors or API timeouts"
+    details: "Run: kubectl logs -n airbyte -l app=config-poller --tail=300. Look for SecretNotFound, AccessDenied, or timeout errors."
+    tools: [kubectl]
+  - step: 3
+    action: "Verify Secrets Manager connectivity and IAM role permissions"
+    details: "Confirm the config poller's service account has the correct IAM role with secretsmanager:GetSecretValue permissions."
+    tools: [AWS IAM, AWS Secrets Manager]
+  - step: 4
+    action: "For secret sync failures: check secret path, key name, workspace ID"
+    details: "Verify the secret path matches the expected pattern. Check that workspace ID in the config matches the actual Airbyte workspace."
+    tools: [AWS Secrets Manager, Airbyte config]
+  - step: 5
+    action: "For OAuth token refresh failures: check token expiry and credentials"
+    details: "Verify OAuth client ID/secret haven't been rotated. Check token refresh endpoint is reachable. Review token expiry timeline."
+    tools: [OAuth provider, Network tools]
+  - step: 6
+    action: "Compare expected vs actual workspace config in Airbyte UI"
+    details: "Open Airbyte UI → Settings → Workspace. Compare displayed config against expected values from source of truth."
+    tools: [Airbyte UI]
+  - step: 7
+    action: "For v2 workspace issues: check tenant isolation boundaries"
+    details: "Verify workspace-level isolation is correctly configured. Check for cross-tenant config leakage or wrong workspace targeting."
+    tools: [Airbyte UI, Config files]
+    reference: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/5522456601"
+  - step: 8
+    action: "Restart config poller pod if transient error"
+    details: "If error appears transient: kubectl rollout restart deployment/config-poller -n airbyte. Monitor logs after restart."
+    tools: [kubectl]
+  - step: 9
+    action: "If persistent: escalate to Transporters with config poller logs and workspace ID"
+    details: "Attach full pod logs, workspace ID, secret paths attempted, and error messages to the PRODOPS ticket. Tag Transporters team."
+    tools: [Jira, Slack]
+
+knowledge_links:
+  - title: "Config Poller Design Doc"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3346399234"
+    description: "Architecture design for the config poller service including secret sync flow and workspace isolation."
+  - title: "Config Poller Operational Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3387064329"
+    description: "Operational procedures for config poller troubleshooting, restart, and recovery."
+  - title: "Airbyte Components v2"
+    url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/5522456601"
+    description: "Airbyte v2 workspace architecture and config poller integration."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-airbyte-config-sync"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

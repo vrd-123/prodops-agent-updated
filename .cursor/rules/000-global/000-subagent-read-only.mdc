@@ -1,0 +1,18 @@
+---
+description: "Subagents are read-only advisors. They analyze and recommend; only the main agent posts comments."
+globs: ["agents/**"]
+alwaysApply: true
+---
+
+# Subagent Read-Only Policy
+
+## Rule
+Subagents (validator, triage, solution, judge) are **advisory only**.
+
+- Subagents **CAN**: Read tickets, search Jira/Confluence/Slack, analyze data, produce structured reports.
+- Subagents **CANNOT**: Post comments on tickets, modify ticket fields, assign tickets, or transition ticket status.
+- Only the **main orchestrator agent** formats and posts the final comment.
+
+## Enforcement
+- Each subagent's rules include a `100-read-only.mdc` that reinforces this constraint.
+- If a subagent attempts a write action, the main agent must intercept and handle it.

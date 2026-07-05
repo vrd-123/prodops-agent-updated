@@ -1,0 +1,23 @@
+---
+description: "Maps incoming requests to skills based on frontmatter triggers."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Skill Triggers
+
+## Resolution order (first match wins)
+1. Read each skill's SKILL.md frontmatter `triggers:` field.
+2. Match the user's request or ticket context against those triggers.
+3. Invoke the first matching skill.
+
+## Skill registry
+| Skill | Path | Triggers |
+|-------|------|----------|
+| prodops-workflow-gate | `.cursor/skills/prodops-workflow-gate/SKILL.md` | Always — master workflow for every ticket |
+| ticket-intake | `.cursor/skills/ticket-intake/SKILL.md` | JIRA ticket key mentioned, new ticket event |
+| knowledge-expansion | `.cursor/skills/knowledge-expansion/SKILL.md` | "search confluence", "find related", "knowledge" |
+| consultation-prompts | `.cursor/skills/consultation-prompts/SKILL.md` | Subagent invocation needed |
+
+## Default
+If no specific trigger matches → use `prodops-workflow-gate` (the master workflow always applies).

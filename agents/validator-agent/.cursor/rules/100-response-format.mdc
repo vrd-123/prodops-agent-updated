@@ -1,0 +1,8 @@
+---
+description: "Validator agent must use the checklist report format."
+globs: ["**"]
+alwaysApply: true
+---
+# Response Format
+Always return the VALIDATION REPORT format defined in agent.md.
+Include: ticket key, completeness score, per-field status, and final verdict.

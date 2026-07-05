@@ -1,0 +1,98 @@
+# ============================================================================
+# ProdOps Ticket Rule: Gainwell API
+# ============================================================================
+# Team: Transporters | Service: Gainwell FHIR API / MDP / HealthLake
+# Handles: FHIR queries, MDP pagination, HealthLake bulk loads, Gainwell API issues
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - gainwell
+  - Gainwell
+  - GW API
+  - MDP
+  - FHIR
+  - HealthLake
+  - x-app-user-id
+  - _count
+  - bulk FHIR
+  - pagination
+  - bundle.link
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check Gainwell API health endpoint and response times"
+    details: "Hit the Gainwell API health check endpoint. Record response time and status code. Compare against baseline latency."
+    tools: [curl, Postman, CloudWatch]
+  - step: 2
+    action: "For pagination failures: verify _count parameter and bundle.link navigation"
+    details: "Check if the _count parameter is set correctly. Verify bundle.link URLs are being followed for multi-page results. Check for truncated responses."
+    tools: [API logs, curl]
+  - step: 3
+    action: "For FHIR query failures: validate resource type, search parameters, x-app-user-id"
+    details: "Verify the FHIR resource type is valid, search parameters match the API spec, and x-app-user-id header is present and correct."
+    tools: [API spec, curl]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4857987073"
+  - step: 4
+    action: "For HealthLake errors: check data store status and bulk load jobs"
+    details: "Open AWS HealthLake console. Check data store status (ACTIVE/CREATING/DELETING). Review bulk import/export job statuses."
+    tools: [AWS HealthLake, AWS Console]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4734779409"
+  - step: 5
+    action: "For timeout errors: check API response times and increase timeout if needed"
+    details: "Review CloudWatch metrics for API latency. If p99 latency exceeds timeout threshold, consider increasing client-side timeout or optimizing the query."
+    tools: [CloudWatch, API config]
+  - step: 6
+    action: "For auth failures: verify JWT token and Ping auth configuration"
+    details: "Check JWT token expiry, issuer, and audience claims. Verify Ping Federate configuration and token refresh flow."
+    tools: [JWT decoder, Ping admin]
+  - step: 7
+    action: "Check Databricks workflow logs for extraction pipeline failures"
+    details: "If the issue is in the data extraction pipeline (not the API itself), check the Databricks workflow run logs for the Gainwell extraction job."
+    tools: [Databricks UI]
+  - step: 8
+    action: "If Gainwell-side issue: open ticket with Gainwell support"
+    details: "If the issue is on Gainwell's side (API down, data issues), open a ticket with Gainwell support. Include request/response details, timestamps, and error codes."
+    tools: [Gainwell support portal]
+  - step: 9
+    action: "Create or update PRODOPS ticket with resolution details"
+    details: "Document: API endpoint, FHIR resource, error details, root cause (client vs Gainwell), and resolution steps."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Abacus API Service Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4669472770"
+    description: "Comprehensive guide to the Abacus API service layer including authentication and rate limiting."
+  - title: "Gainwell Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/5326700555"
+    description: "Operational runbook for Gainwell API troubleshooting, monitoring, and incident response."
+  - title: "MDP FHIR API Mapping"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4857987073"
+    description: "FHIR resource type mapping, search parameter documentation, and pagination behavior."
+  - title: "HealthLake Performance"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4734779409"
+    description: "HealthLake performance benchmarks, bulk load optimization, and query tuning."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-abacus-insights-runtime"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

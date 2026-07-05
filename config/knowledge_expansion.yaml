@@ -1,0 +1,227 @@
+# ============================================================================
+# Knowledge Expansion — Global Fallback Configuration
+# ============================================================================
+# Path: config/knowledge_expansion.yaml
+#
+# Read by: main agent (agent.md), solution-lookup/SKILL.md,
+#          020-orchestration-hooks.mdc
+#
+# Purpose: When NO service-specific ticket-rules YAML matches the ticket
+#          keywords, this file provides broad operational knowledge, SOPs,
+#          troubleshooting guides, and escalation paths as a safety net.
+#
+# Design:
+#   - Service-specific links live in config/ticket-rules/<type>.yaml
+#   - This file = default knowledge when no service matches
+#   - Fallback sections are loaded in section_priority order
+#   - The prodops bot ONLY comments on tickets — no code changes
+# ============================================================================
+
+trigger_when: >
+  Main agent needs more context for a JIRA ticket, project, or subject.
+  Use ticket-rules knowledge_links first, then this config for defaults.
+
+# ---------------------------------------------------------------------------
+# Confluence Defaults
+# ---------------------------------------------------------------------------
+confluence:
+  preferred_spaces:
+    - Abacus NextGen 2.0
+  max_pages_per_turn: 3
+
+  # -------------------------------------------------------------------------
+  # Fallback Knowledge Links — organized by section
+  # Loaded by priority when no ticket-rules YAML matches
+  # -------------------------------------------------------------------------
+  fallback_knowledge_links:
+
+    # ── Section 1: Standard Operating Procedures ──────────────────────────
+    general_operations:
+      title: "ProdOps Standard Operating Procedures & Process"
+      links:
+        - title: "PRODOPS Standard Operating Procedure (SOP)"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/5475270668/PRODOPS+Standard+Operating+Procedure"
+          description: >
+            Ticket review SLA, validation process, severity classification,
+            escalation, handoff, and closure standards.
+
+        - title: "How to File an Issue in NextGen"
+          url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/3290759170"
+          description: >
+            Guidelines for creating complete, actionable PRODOPS tickets.
+
+        - title: "ProdOps Issue Categorization"
+          url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/5432508442"
+          description: >
+            10 standard categories: Code, Config, Infra, Data Movement,
+            Integration, Monitoring, Access, Enhancement, Not an Issue, Other.
+
+        - title: "ProdOps Self-Service Station"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5787451393/ProdOps+Self-Service+Station"
+          description: >
+            Operational requests requiring elevated access (S3 ops,
+            DB cleanup, Databricks maintenance).
+
+    # ── Section 2: Troubleshooting & Incident Response ────────────────────
+    troubleshooting:
+      title: "General Troubleshooting & Incident Response"
+      links:
+        - title: "ProdOps Troubleshooting Guide"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/4723441676/ProdOps+Troubleshooting+Guide"
+          description: >
+            Documented solutions for past ProdOps incidents across all
+            services.
+
+        - title: "Development Team Runbooks (Index)"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/1530036306/Development+Team+Runbooks"
+          description: >
+            Master index linking to SRE, Platform, Connector, and MDM
+            runbooks.
+
+        - title: "Symptom Index View — 141 PRODOPS InterOp Incidents"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5808750594/Symptom+Index+View"
+          description: >
+            Comprehensive symptom → diagnosis → fix table covering 141
+            historical incidents.
+
+        - title: "Product Engineering Incident Response Plan"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/4977819664/Product+Engineering+Incident+Response+Plan"
+          description: >
+            Severity classification, IRT formation, communication
+            cadence, post-mortem process.
+
+        - title: "Incident 5Y Template"
+          url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/3136782337"
+          description: >
+            Blameless post-incident review using 5-Whys approach.
+
+    # ── Section 3: Escalation Paths & Team Handoff ────────────────────────
+    escalation:
+      title: "Escalation Paths & Team Handoff"
+      links:
+        - title: "InterOp ↔ SWAT: Production Incident Management Framework"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5807636500/InterOp+SWAT+Production+Incident+Management+Framework"
+          description: >
+            RACI matrix, L0→L1 escalation, handover checklist, team
+            contacts.
+
+        - title: "Incorporating SWAT into the ProdOps Process"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4196499496/Incorporating+SWAT+into+the+ProdOps+Process"
+          description: >
+            SWAT ticket handling, skill-building plan, transition to
+            NextGen ProdOps.
+
+        - title: "Engineering After-Hours Escalations (Version 1.0)"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/SUPPORT/pages/1802863175/Engineering+After-Hours+Escalations+Version+1.0"
+          description: >
+            Sev1 after-hours escalation: required ticket info and FAQ.
+
+        - title: "Cambia Issue Triaging Process"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/DO/pages/5288624131/Cambia+Issue+Triaging+Process"
+          description: >
+            DataOps-first triage: DataOps → PRODOPS + SWAT (platform).
+
+    # ── Section 4: Cross-Cutting Platform Knowledge ───────────────────────
+    platform_knowledge:
+      title: "Cross-Cutting Platform & Architecture"
+      links:
+        - title: "Transporters Team Service Catalog"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/team39c7d1bd3e3c42aeae7821a61ddd9f4b33/pages/5280333830/Transporters+Team+Service+Catalog"
+          description: >
+            Complete catalog of Transporters-owned services with repos
+            and ownership.
+
+        - title: "Component Information Guides"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/PRDDOC/pages/2429911128/Component+Information+Guides"
+          description: >
+            Per-component curated link sets: design, operations,
+            troubleshooting.
+
+        - title: "Nextgen Manifest to Repository Mapping"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/CAN/pages/4229365789"
+          description: >
+            Maps deployment manifests to source repositories — find
+            where your config lives.
+
+        - title: "ProdOps Defect Summary"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5803737090/ProdOps+Defect+Summary"
+          description: >
+            Defects by RCA category, severity, and component.
+
+    # ── Section 5: Data Operations ────────────────────────────────────────
+    data_operations:
+      title: "Data Operations & Workflow Troubleshooting"
+      links:
+        - title: "Workflow Failure Resolution Process in BCI"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/DO/pages/4327735297/Workflow+Failure+Resolution+Process+in+BCI"
+          description: >
+            Repair task → re-run → ProdOps escalation for persistent
+            failures.
+
+        - title: "DataOps Runbook for Salesforce and RTMS-Admin"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/DO/pages/4460675073/Dataops+Runbook+for+Salesforce+and+RTMS-Admin"
+          description: >
+            Salesforce and RTMS-Admin data pipeline failures.
+
+    # ── Section 6: Environment & Deployment ───────────────────────────────
+    environment_context:
+      title: "Environment & Deployment Context"
+      links:
+        - title: "Configuration Only Deployment Process"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4855660606"
+          description: >
+            Config-only changes without full code releases.
+
+        - title: "Standard Deployment Process"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4417421321"
+          description: >
+            End-to-end deployment process for NextGen services.
+
+        - title: "Git Repository Release Management Guide"
+          url: "https://abacusinsights.atlassian.net/wiki/spaces/GWI/pages/4997513231/Git+Repository+Release+Management+Guide"
+          description: >
+            Branching, release promotion, repository management.
+
+    # ── Section 7: Bot Validation ─────────────────────────────────────────
+    bot_validation:
+      title: "ProdOps Bot Ticket Validation"
+      links:
+        - title: "SWAT-2594: Define the ProdOps Bot Validation Checklist (SoP-based)"
+          url: "https://abacusinsights.atlassian.net/browse/SWAT-2594"
+          description: >
+            SoP-derived checklist for validating ticket completeness.
+
+# ---------------------------------------------------------------------------
+# Fallback Behavior Configuration
+# ---------------------------------------------------------------------------
+fallback_behavior:
+  attempt_closest_match: true
+  max_links_to_load: 10
+  section_priority:
+    - troubleshooting
+    - general_operations
+    - escalation
+    - platform_knowledge
+    - data_operations
+    - environment_context
+    - bot_validation
+  confidence_threshold: 0.4
+  agent_prompt: |
+    You are in FALLBACK MODE — no specific ticket-rules file matched
+    this ticket's keywords.
+
+    Before investigating:
+    1. Check if the ticket mentions any environment, client, or
+       component that might narrow the search. Re-check keyword
+       matching with relaxed criteria.
+    2. Use the ProdOps Troubleshooting Guide and Symptom Index to
+       find similar past incidents.
+    3. Follow the PRODOPS SOP for ticket validation — ensure all
+       required information is present before proceeding.
+    4. If the ticket clearly belongs to a specific team
+       (Transporters, InterOp, Platform, DataOps), escalate using
+       the InterOp-SWAT framework.
+    5. Document your investigation steps in the ticket comments.
+
+    NEVER guess the repository. If you cannot determine the correct
+    repo, recommend manual triage by the SWAT on-call engineer.

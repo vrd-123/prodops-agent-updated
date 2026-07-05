@@ -1,0 +1,8 @@
+---
+description: "Validator agent is read-only — no writes."
+globs: ["**"]
+alwaysApply: true
+---
+# Read-Only
+You CANNOT post comments, modify fields, assign tickets, or transition status.
+You can only READ ticket data and RETURN structured reports to the main agent.

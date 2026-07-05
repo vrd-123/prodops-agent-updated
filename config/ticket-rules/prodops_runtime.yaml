@@ -1,0 +1,105 @@
+# ============================================================================
+# ProdOps Ticket Rule: Abacus Insights Runtime (AIR)
+# ============================================================================
+# Team: Platform | Service: ng-abacus-insights-runtime
+# Handles: Databricks, PipeSpec, Airflow DAGs, cluster creation, OOM, Spark jobs
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - AIR
+  - abacus-insights-runtime
+  - abacus insights runtime
+  - Databricks
+  - PipeSpec
+  - pipeline
+  - cluster
+  - Airflow
+  - DAG
+  - workflow
+  - OOM
+  - OutOfMemory
+  - spark
+  - job failure
+
+owning_team:
+  name: "Platform"
+  slack_channel: "#platform-oncall"
+  oncall_rotation: "Platform On-Call"
+  escalation_contact: "Platform Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check Databricks workflow status and run history"
+    details: "Open Databricks Workspace → Workflows. Find the failed workflow run. Note the run ID, start time, duration, and failure stage."
+    tools: [Databricks UI]
+  - step: 2
+    action: "Check cluster logs for OOM, driver errors, or Spark exceptions"
+    details: "In the failed run, click into the failed task. Check the cluster event log, Spark UI, and stderr for errors like OutOfMemoryError, SparkException, or driver crashes."
+    tools: [Databricks UI, Spark UI]
+  - step: 3
+    action: "Verify AIR version compatibility"
+    details: "Check the AIR version used by the workflow against the latest supported versions. Version mismatches can cause PipeSpec parsing failures."
+    tools: [Databricks UI, AIR version matrix]
+  - step: 4
+    action: "Check PipeSpec YAML for configuration errors"
+    details: "Review the PipeSpec YAML file for syntax errors, invalid stage references, or misconfigured parameters. Validate against the PipeSpec schema."
+    tools: [GitLab, PipeSpec docs]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/4500586501"
+  - step: 5
+    action: "Verify Delta table health (VACUUM, OPTIMIZE)"
+    details: "Check if Delta tables used by the pipeline need VACUUM or OPTIMIZE. Stale checkpoints or too many small files can cause failures."
+    tools: [Databricks SQL, Delta Lake]
+  - step: 6
+    action: "Check Airflow DAG status and schedule"
+    details: "If orchestrated by Airflow: check DAG run status, task instance logs, and scheduling configuration. Look for upstream task failures."
+    tools: [Airflow UI]
+  - step: 7
+    action: "For cluster creation failures: check quota, instance types, IAM"
+    details: "If cluster failed to create: check AWS service quotas for the instance type, verify IAM instance profile, and check subnet/AZ availability."
+    tools: [AWS Console, Databricks admin]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5629804551"
+  - step: 8
+    action: "If version mismatch: pin to correct AIR version"
+    details: "If the failure is due to AIR version, pin the workflow to the correct AIR version using the version pinning process."
+    tools: [Databricks UI, GitLab config]
+  - step: 9
+    action: "If persistent: escalate with cluster ID and workflow run URL"
+    details: "If issue persists after basic troubleshooting, escalate to Platform team with: cluster ID, workflow run URL, error stack trace, and steps already tried."
+    tools: [Jira, Slack]
+  - step: 10
+    action: "Document resolution in PRODOPS ticket"
+    details: "Record: workflow name, run ID, cluster ID, error type, root cause, fix applied, and verification results."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Introduction to AIR"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/4594466845"
+    description: "Overview of Abacus Insights Runtime architecture, components, and deployment model."
+  - title: "AIR CD User Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/3125903361"
+    description: "Continuous deployment guide for AIR including version management and rollback procedures."
+  - title: "PipeSpec in NextGen"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/4500586501"
+    description: "PipeSpec YAML schema, stage definitions, and configuration reference."
+  - title: "Troubleshooting Cluster Creation Failures"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5629804551"
+    description: "Common cluster creation failure modes: quota limits, IAM issues, subnet exhaustion, and fixes."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-abacus-insights-runtime"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

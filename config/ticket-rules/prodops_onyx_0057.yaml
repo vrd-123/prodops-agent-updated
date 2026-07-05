@@ -1,0 +1,98 @@
+# ============================================================================
+# ProdOps Ticket Rule: Onyx / 0057 (InterOp / FHIR)
+# ============================================================================
+# Team: InterOp
+# Path: config/ticket-rules/prodops_onyx_0057.yaml
+
+keywords:
+  - onyx
+  - Onyx
+  - "0057"
+  - interop
+  - InterOp
+  - interoperability
+  - FHIR store
+  - CMS rule
+
+owning_team:
+  name: "InterOp"
+  slack_channel: "#interop-oncall"
+  oncall_rotation: "InterOp On-Call"
+  escalation_contact: "InterOp Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check Onyx pipeline status"
+    details: "Verify Onyx data pipeline health: check Databricks workflow, Airflow DAG, and S3 output."
+    tools: [Databricks, Airflow, S3]
+  - step: 2
+    action: "Verify FHIR store health"
+    details: "Check HealthLake or FHIR server status. Verify FHIR resource availability and query response times."
+    tools: [AWS HealthLake, FHIR API]
+  - step: 3
+    action: "Check 0057 implementation config"
+    details: "Review 0057 CMS rule implementation configuration for the affected client."
+    tools: [Config files, Confluence]
+  - step: 4
+    action: "Review InterOp error logs"
+    details: "Check application logs for InterOp service errors: FHIR validation failures, transform errors."
+    tools: [CloudWatch, kubectl]
+  - step: 5
+    action: "For FHIR query failures: validate resource/search params"
+    details: "Verify FHIR resource type, search parameters, and pagination are correct."
+    tools: [FHIR API, Postman]
+  - step: 6
+    action: "Check Symptom Index View for matching past incidents"
+    details: "Search the 141-incident symptom index for matching symptoms and known resolutions."
+    tools: [Confluence]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5808750594/Symptom+Index+View"
+  - step: 7
+    action: "For S3 report delivery: check S3 replication config"
+    details: "Verify S3 replication rules for outbound report delivery to client buckets."
+    tools: [AWS S3]
+  - step: 8
+    action: "Follow InterOp-SWAT escalation framework"
+    details: "If issue requires platform team involvement, follow the InterOp-SWAT RACI and handover process."
+    tools: [Jira, Slack]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5807636500"
+  - step: 9
+    action: "Coordinate with InterOp team lead"
+    details: "For complex or client-facing issues, loop in the InterOp team lead for coordination."
+    tools: [Slack, Jira]
+  - step: 10
+    action: "Document resolution in ticket"
+    details: "Record root cause, affected clients, fix applied, and any CMS compliance implications."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Onyx 0057 Implementation Process"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/CID/pages/4619468805"
+    description: "Step-by-step 0057 CMS rule implementation process for Onyx platform."
+  - title: "InterOperability with Onyx"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/EA/pages/5423071246"
+    description: "Architecture and integration patterns for InterOp services with Onyx platform."
+  - title: "Symptom Index View — 141 PRODOPS InterOp Incidents"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5808750594/Symptom+Index+View"
+    description: "Comprehensive symptom → diagnosis → fix table covering 141 historical InterOp incidents."
+  - title: "InterOp-SWAT Production Incident Management Framework"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/IT1/pages/5807636500"
+    description: "RACI matrix, L0→L1 escalation, handover checklist for InterOp incidents."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/onyx-infrastructure"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

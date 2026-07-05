@@ -1,0 +1,30 @@
+---
+description: "Hard stops — the agent must never skip workflow steps regardless of task size or perceived simplicity."
+globs: ["**"]
+alwaysApply: true
+---
+
+# No Skipping Steps
+
+## Unconditional — applies to every task, every time
+
+The prodops-workflow-gate defines 7 steps (0–6). You MUST execute every applicable step in order.
+
+### Hard stops (never skip):
+1. **Ticket Intake** (Step 1) — Always fetch and parse the ticket. Never assume you know the contents.
+2. **Validation** (Step 2) — Always run the SoP checklist. Even if the ticket "looks complete," verify programmatically.
+3. **Triage** (Step 3) — Always classify and route. Never skip because "it's obvious."
+4. **Solution Search** (Step 4) — Always search past tickets and Confluence. Never skip because "I already know the answer."
+5. **Judge** (Step 5) — Always evaluate output quality before posting.
+6. **Comment** (Step 6) — Always format the final structured comment.
+
+### Why this matters:
+- Skipping validation means incomplete tickets reach handlers.
+- Skipping triage means wrong person gets assigned.
+- Skipping solution search means hallucinated recommendations.
+- Skipping judge means low-quality output gets posted to tickets.
+
+### No exceptions:
+- "The task is small" → Still follow all steps.
+- "I already know the answer" → Still verify via search.
+- "The user asked for just one thing" → Still run the full workflow; output only the requested section but validate internally.

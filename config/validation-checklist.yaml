@@ -1,0 +1,84 @@
+# ============================================================================
+# ProdOps Ticket Validation Checklist (SoP-based)
+# ============================================================================
+# Path: config/validation-checklist.yaml
+# Read by: validator-agent, ticket-validation/SKILL.md
+#
+# Defines the mandatory fields every ProdOps ticket must have, based on the
+# PRODOPS Standard Operating Procedure (SoP).
+# ============================================================================
+
+checklist:
+  - id: 1
+    field: "summary"
+    label: "Clear summary/title"
+    criteria: "Title is descriptive, > 10 characters, includes affected service or symptom"
+    required: true
+    applies_to: all
+
+  - id: 2
+    field: "issue_type"
+    label: "Correct issue type"
+    criteria: "Issue type is Bug, Task, Story, or Sub-task — matches the nature of the request"
+    required: true
+    applies_to: all
+
+  - id: 3
+    field: "components"
+    label: "Project/component/service info"
+    criteria: "At least one component or label identifying the affected service (e.g., Airbyte, Landing Decrypt)"
+    required: true
+    applies_to: all
+
+  - id: 4
+    field: "environment"
+    label: "Environment details"
+    criteria: "Specifies environment (production, staging, dev) and optionally cluster/region"
+    required: true
+    applies_to: [Bug, Task]
+    note: "Not required for Enhancement or Story types"
+
+  - id: 5
+    field: "priority"
+    label: "Priority/severity per SoP"
+    criteria: "Priority set to P0-P3 per SoP definitions. Must match the described severity."
+    required: true
+    applies_to: all
+
+  - id: 6
+    field: "business_impact"
+    label: "Business impact / reason"
+    criteria: "Description includes why this matters — customer impact, revenue risk, SLA breach, etc."
+    required: true
+    applies_to: all
+
+  - id: 7
+    field: "evidence"
+    label: "Steps, logs, screenshots, or evidence"
+    criteria: "Description includes reproduction steps, error logs, stack traces, or screenshots"
+    required: true
+    applies_to: [Bug]
+    note: "Recommended but not required for Enhancement/Task"
+
+  - id: 8
+    field: "acceptance_criteria"
+    label: "Acceptance criteria / expected outcome"
+    criteria: "Description includes what 'done' looks like — expected behavior after fix"
+    required: false
+    applies_to: all
+    note: "Recommended. Absence does not block but gets flagged."
+
+  - id: 9
+    field: "dependencies"
+    label: "Dependencies, blockers, or approvals needed"
+    criteria: "If the ticket depends on other work, approvals, or access — it should be stated"
+    required: false
+    applies_to: all
+    note: "Flag N/A if not applicable"
+
+scoring:
+  total_fields: 9
+  required_fields: 7  # fields 1-7 are required for Bug type
+  pass_threshold: 7   # 7/9 or all required fields = COMPLETE
+  warning_threshold: 5 # 5-6 = INCOMPLETE but workable
+  fail_threshold: 4    # < 5 = CRITICAL — too incomplete to act on

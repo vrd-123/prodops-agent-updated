@@ -1,0 +1,96 @@
+# ============================================================================
+# ProdOps Ticket Rule: Deployment Config (CI/CD / Branching / CMD)
+# ============================================================================
+# Team: DevOps
+# Path: config/ticket-rules/prodops_deployment_config.yaml
+
+keywords:
+  - deployment
+  - deploy
+  - release
+  - rollback
+  - promotion
+  - branching
+  - CI/CD
+  - GitLab CI
+  - merge request
+  - CMD
+  - change management
+
+owning_team:
+  name: "DevOps"
+  slack_channel: "#devops-oncall"
+  oncall_rotation: "DevOps On-Call"
+  escalation_contact: "DevOps Tech Lead"
+
+sla:
+  P0:
+    response_time: "30 minutes"
+    resolution_time: "8 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Check CI/CD pipeline status"
+    details: "Review GitLab CI pipeline for the affected service. Check for failed stages, timeouts, or configuration errors."
+    tools: [GitLab CI]
+  - step: 2
+    action: "Review merge request and branch"
+    details: "Verify the MR target branch is correct, conflicts are resolved, and CI checks pass."
+    tools: [GitLab]
+  - step: 3
+    action: "Verify deployment promotion path"
+    details: "Confirm the correct promotion path: develop → stage → master. Check if any stages were skipped."
+    tools: [GitLab, Helmsman]
+  - step: 4
+    action: "Check Helmsman/Seiji deployment logs"
+    details: "Review Helmsman desired-state file and Seiji executor logs for deployment errors."
+    tools: [Helmsman, Seiji]
+  - step: 5
+    action: "For config-only changes: follow Config Only Deployment Process"
+    details: "If this is a config-only change, verify it follows the simplified deployment path."
+    tools: [GitLab]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4855660606"
+  - step: 6
+    action: "For rollback: identify last good version and revert"
+    details: "Check deployment history, identify the last successful version, and initiate rollback via Helmsman."
+    tools: [Helmsman, kubectl]
+  - step: 7
+    action: "Verify service health post-deployment"
+    details: "Check pod status, readiness probes, and service endpoints after deployment completes."
+    tools: [kubectl, Grafana]
+  - step: 8
+    action: "Update CMD ticket if required"
+    details: "If a CMD (Change Management) ticket exists, update it with deployment outcome and evidence."
+    tools: [Jira]
+  - step: 9
+    action: "Document resolution in ticket"
+    details: "Record deployment outcome, any issues encountered, and follow-up actions."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Standard Deployment Process"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4417421321"
+    description: "End-to-end deployment process for NextGen services including staging and production."
+  - title: "Configuration Only Deployment Process"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4855660606"
+    description: "Simplified deployment path for config-only changes without full code releases."
+  - title: "Nextgen Branching Practices"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/CAN/pages/4515561530"
+    description: "Branch naming conventions, promotion flow, and merge policies."
+  - title: "Git Repository Release Management Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/GWI/pages/4997513231/Git+Repository+Release+Management+Guide"
+    description: "Branching, release promotion, and repository management standards."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-deployment-config-files"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

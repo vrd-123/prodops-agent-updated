@@ -1,0 +1,387 @@
+# ============================================================================
+# PRODOPS Ticket-Rules Index — Master Registry
+# ============================================================================
+# Read by: 010-ticket-registry.mdc, ticket-triage/SKILL.md,
+#          ticket-validation/SKILL.md, solution-lookup/SKILL.md,
+#          020-orchestration-hooks.mdc
+#
+# Sections:
+#   tickets_registry    — per-type keyword arrays + file refs + team
+#   special_rules       — security escalation, P0 fast-track, compliance
+#   priority_resolution — resolution order when multiple signals exist
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# 1. TICKET REGISTRY
+# ---------------------------------------------------------------------------
+# Each entry maps a ticket type → its keywords, YAML rule file, optional
+# knowledge expansion file, and owning team.
+# The 010-ticket-registry.mdc rule matches ticket labels/title/description
+# against tickets_registry[*].keywords to select the correct YAML.
+# ---------------------------------------------------------------------------
+tickets_registry:
+
+  # ── Transporters Team Services ──────────────────────────────────────────
+
+  - type: landing_decrypt
+    keywords:
+      - ng-landing-decrypt
+      - landing-decrypt
+      - landing decrypt
+      - PGP
+      - GPG
+      - decrypt
+      - DLQ
+      - dead letter
+      - file ingestion
+      - 7zip
+      - 7z
+      - ZIP extraction
+      - KEDA
+      - ScaledJob
+    repo_rules: "prodops_landing_decrypt.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_landing_decrypt.yaml"
+    team: Transporters
+
+  - type: airbyte
+    keywords:
+      - airbyte
+      - airbyte-helm
+      - CDC
+      - connector
+      - Debezium
+      - MSSQL
+      - sync failure
+      - connection broken
+      - saved offset
+      - workload
+      - destination-s3
+      - source-mssql
+      - normalization
+    repo_rules: "prodops_airbyte.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_airbyte.yaml"
+    team: Transporters
+
+  - type: airbyte_config_poller
+    keywords:
+      - config-poller
+      - config poller
+      - config-sync
+      - ng-airbyte-config
+      - workspace config
+      - secret sync
+      - OAuth
+      - workspace secrets
+    repo_rules: "prodops_airbyte_config_poller.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_airbyte_config_poller.yaml"
+    team: Transporters
+
+  - type: data_ingestion_api
+    keywords:
+      - data-ingestion-api
+      - data ingestion api
+      - ng-data-ingestion
+      - API Gateway
+      - Kinesis
+      - Firehose
+      - WAF
+      - mTLS
+      - certificate
+      - REST ingestion
+    repo_rules: "prodops_data_ingestion_api.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_data_ingestion_api.yaml"
+    team: Transporters
+
+  - type: gainwell
+    keywords:
+      - gainwell
+      - Gainwell
+      - GW API
+      - MDP
+      - FHIR
+      - HealthLake
+      - x-app-user-id
+      - _count
+      - bulk FHIR
+      - pagination
+      - bundle.link
+    repo_rules: "prodops_gainwell.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_gainwell.yaml"
+    team: Transporters
+
+  - type: feature_configuration
+    keywords:
+      - feature config
+      - config-only
+      - config only
+      - configuration release
+      - feature flag
+      - SFTP config
+      - DLQ monitor config
+      - manifest
+    repo_rules: "prodops_feature_configuration.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_feature_configuration.yaml"
+    team: Transporters
+
+  # ── Platform / Runtime Services ─────────────────────────────────────────
+
+  - type: runtime
+    keywords:
+      - AIR
+      - abacus-insights-runtime
+      - abacus insights runtime
+      - Databricks
+      - PipeSpec
+      - pipeline
+      - cluster
+      - Airflow
+      - DAG
+      - workflow
+      - OOM
+      - OutOfMemory
+      - spark
+      - job failure
+    repo_rules: "prodops_runtime.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_runtime.yaml"
+    team: Platform
+
+  - type: observability
+    keywords:
+      - observability
+      - OpenTelemetry
+      - OTel
+      - telemetry
+      - Grafana
+      - dashboard
+      - metrics
+      - tracing
+      - alert
+      - monitoring
+      - DORA
+      - instrumentation
+    repo_rules: "prodops_observability.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_observability.yaml"
+    team: "Platform / SRE"
+
+  - type: infrastructure
+    keywords:
+      - infrastructure
+      - ng-infrastructure
+      - terraform
+      - EKS
+      - kubernetes
+      - k8s
+      - pod
+      - node
+      - helm
+      - Helmsman
+      - Karpenter
+      - VPC
+      - security group
+      - crashloop
+    repo_rules: "prodops_infrastructure.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_infrastructure.yaml"
+    team: "Platform / DevOps"
+
+  - type: deployment_config
+    keywords:
+      - deployment
+      - deploy
+      - release
+      - rollback
+      - promotion
+      - branching
+      - CI/CD
+      - GitLab CI
+      - merge request
+      - CMD
+      - change management
+    repo_rules: "prodops_deployment_config.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_deployment_config.yaml"
+    team: DevOps
+
+  # ── Data Movement & Outbound ────────────────────────────────────────────
+
+  - type: snowflake
+    keywords:
+      - snowflake
+      - Snowflake
+      - snow
+      - COPY INTO
+      - snowshare
+      - Snowshare
+      - parquet
+      - bulk load
+      - staging
+      - timezone
+      - CDC load
+      - Delta Lake
+    repo_rules: "prodops_snowflake.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_snowflake.yaml"
+    team: DataOps
+
+  - type: s3_replication
+    keywords:
+      - S3 replication
+      - s3-replication
+      - cross-account
+      - cross account
+      - outbound S3
+      - inbound S3
+      - replication rule
+      - delta clone
+      - deep clone
+      - data sharing
+    repo_rules: "prodops_s3_replication.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_s3_replication.yaml"
+    team: "Transporters / Platform"
+
+  - type: hedis_extraction
+    keywords:
+      - HEDIS
+      - hedis
+      - extraction engine
+      - SAM
+      - Inovalon
+      - Cotiviti
+      - extract generation
+      - outbound SAM
+      - Jobs API
+    repo_rules: "prodops_hedis_extraction.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_hedis_extraction.yaml"
+    team: Data Solutions
+
+  # ── Data Services ───────────────────────────────────────────────────────
+
+  - type: domain_model
+    keywords:
+      - domain model
+      - MDM
+      - Reltio
+      - AMS
+      - master data
+      - data quality
+      - DQ
+      - schema
+      - entity model
+    repo_rules: "prodops_domain_model.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_domain_model.yaml"
+    team: "MDM / AMS"
+
+  # ── Security & Access ───────────────────────────────────────────────────
+
+  - type: auth_rbac
+    keywords:
+      - RBAC
+      - IAM
+      - access
+      - permission
+      - role
+      - secret
+      - credential
+      - SSO
+      - SAML
+      - identity
+      - IDM
+      - JIT
+    repo_rules: "prodops_auth_rbac.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_auth_rbac.yaml"
+    team: "Platform / Security"
+
+  # ── InterOp ─────────────────────────────────────────────────────────────
+
+  - type: onyx_0057
+    keywords:
+      - onyx
+      - Onyx
+      - "0057"
+      - interop
+      - InterOp
+      - interoperability
+      - FHIR store
+      - CMS rule
+    repo_rules: "prodops_onyx_0057.yaml"
+    knowledge_expansion: "../knowledge_expansion/knowledge_expansion_onyx_0057.yaml"
+    team: InterOp
+
+# ---------------------------------------------------------------------------
+# 2. SPECIAL RULES
+# ---------------------------------------------------------------------------
+# Applied BEFORE normal keyword matching. Referenced by ticket-triage/SKILL.md
+# Step 3 and 010-ticket-registry.mdc.
+# ---------------------------------------------------------------------------
+special_rules:
+
+  security_escalation:
+    trigger_keywords:
+      - breach
+      - vulnerability
+      - CVE
+      - unauthorized access
+      - data leak
+      - credential exposure
+      - secret exposed
+      - security incident
+    action: "IMMEDIATE_ESCALATE"
+    escalate_to: "Security Team"
+    skip_normal_triage: true
+    notify:
+      - "security-oncall@abacusinsights.com"
+    note: >
+      Security incidents bypass normal triage — escalate immediately
+      to Security Team and OpsGenie.
+
+  p0_fast_track:
+    trigger_keywords:
+      - production down
+      - prod down
+      - outage
+      - P0
+      - Sev1
+      - SEV-1
+      - complete failure
+      - data loss
+      - service unavailable
+    action: "FAST_TRACK"
+    skip_validation: false
+    auto_priority: "P0 - Critical"
+    auto_sla:
+      response_time: "15 minutes"
+      resolution_time: "4 hours"
+    note: >
+      P0 tickets get fast-tracked past normal queue. Validation still
+      runs but is expedited.
+
+  compliance_flag:
+    trigger_keywords:
+      - HIPAA
+      - PHI
+      - PII
+      - FedRAMP
+      - SOC2
+      - audit
+      - compliance
+    action: "FLAG_COMPLIANCE"
+    add_label: "compliance-review"
+    note: >
+      Compliance-flagged tickets get additional review step and
+      restricted visibility.
+
+# ---------------------------------------------------------------------------
+# 3. PRIORITY RESOLUTION ORDER
+# ---------------------------------------------------------------------------
+# When multiple signals exist, this defines the precedence.
+# Referenced by 010-ticket-registry.mdc.
+# ---------------------------------------------------------------------------
+priority_resolution:
+  order:
+    - explicit_ticket_type    # Jira priority field already set
+    - label_based             # Jira labels match a known ticket type
+    - keyword_based           # Title/description keyword matching
+  fallback: "P3 - Low"
+  ambiguity_action: "prompt_user"
+  note: |
+    If explicit_ticket_type is set (e.g., user selected "P1 - High"), honor it.
+    If only labels are present, match labels to tickets_registry[*].type.
+    If neither, fall back to keyword matching against tickets_registry[*].keywords.
+    If nothing matches, assign P3 - Low and prompt for clarification.

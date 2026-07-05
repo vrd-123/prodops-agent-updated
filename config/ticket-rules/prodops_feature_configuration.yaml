@@ -1,0 +1,92 @@
+# ============================================================================
+# ProdOps Ticket Rule: Feature Configuration
+# ============================================================================
+# Team: Transporters | Service: ng-deployment-config-files
+# Handles: Config-only deployments, feature flags, SFTP/DLQ monitor configs
+# Read by: 010-ticket-registry.mdc, playbook-lookup/SKILL.md, ticket-triage/SKILL.md
+
+keywords:
+  - feature config
+  - config-only
+  - config only
+  - configuration release
+  - feature flag
+  - SFTP config
+  - DLQ monitor config
+  - manifest
+
+owning_team:
+  name: "Transporters"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "30 minutes"
+    resolution_time: "8 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Identify which service's configuration needs updating"
+    details: "From the ticket description, identify the target service, environment, and specific config values to change."
+    tools: [Jira ticket]
+  - step: 2
+    action: "Locate the correct config file in the deployment manifest repo"
+    details: "Use the Nextgen Manifest to Repository Mapping to find the correct config file path in ng-deployment-config-files."
+    tools: [GitLab, Manifest mapping]
+  - step: 3
+    action: "Follow Configuration Only Deployment Process"
+    details: "For config-only changes, follow the Config Only Deployment Process document. No code changes — only YAML/JSON config updates."
+    tools: [Confluence, GitLab]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4855660606"
+  - step: 4
+    action: "Create feature branch from develop with config changes"
+    details: "Branch from develop: git checkout -b feature/PRODOPS-XXXX-config-update. Make the config changes per the ticket requirements."
+    tools: [Git, GitLab]
+  - step: 5
+    action: "Run CI validation (lint, schema check, dry-run)"
+    details: "Push the branch and verify CI pipeline passes: YAML lint, schema validation, and dry-run deployment check."
+    tools: [GitLab CI]
+  - step: 6
+    action: "Get PR approval from config owner and service team"
+    details: "Create merge request, assign to config owner and relevant service team lead for review and approval."
+    tools: [GitLab MR]
+  - step: 7
+    action: "Promote: develop → stage → master"
+    details: "Follow Nextgen Branching Practices for promotion. Merge to develop first, then promote to stage, then master."
+    tools: [GitLab, CI/CD]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/CAN/pages/4515561530"
+  - step: 8
+    action: "Monitor deployment via Helmsman/Seiji for successful rollout"
+    details: "After merge, monitor the Helmsman/Seiji deployment pipeline. Verify pods pick up new config (check pod restart timestamps)."
+    tools: [Helmsman, kubectl, Seiji]
+  - step: 9
+    action: "Verify service health post-deployment"
+    details: "Check service health endpoints, CloudWatch metrics, and application logs to confirm config change is active and service is healthy."
+    tools: [CloudWatch, kubectl, Health endpoints]
+
+knowledge_links:
+  - title: "Configuration Release Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/x/FQA0UQE"
+    description: "Step-by-step process for configuration-only releases including approval and promotion."
+  - title: "Config Only Deployment Process"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/DSP/pages/4855660606"
+    description: "Deployment process for config-only changes without full code releases."
+  - title: "Nextgen Branching Practices"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/CAN/pages/4515561530"
+    description: "Branch naming conventions and promotion flow for NextGen repositories."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-deployment-config-files"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

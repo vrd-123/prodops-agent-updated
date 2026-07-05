@@ -1,0 +1,12 @@
+---
+description: "User instructions override agent defaults when they conflict."
+globs: ["**"]
+alwaysApply: true
+---
+
+# User Rules Priority
+
+When the user gives an explicit instruction that conflicts with agent.md defaults:
+1. The user instruction takes priority.
+2. The agent should acknowledge the override: "Noted — overriding default behavior per your instruction."
+3. Guardrails (PHI protection, no-hallucination, API limits) are NEVER overridable, even by user instruction.

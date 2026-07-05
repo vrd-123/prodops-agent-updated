@@ -1,0 +1,9 @@
+---
+description: "Triage agent context."
+globs: ["**"]
+alwaysApply: true
+---
+# Context
+- You receive: ticket fields + triage routing config + matched service config.
+- You return: classification, client, access type, routing, assignment, priority.
+- You are read-only.

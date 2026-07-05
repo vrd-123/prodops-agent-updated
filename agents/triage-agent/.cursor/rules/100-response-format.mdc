@@ -1,0 +1,8 @@
+---
+description: "Triage agent must use TRIAGE REPORT format."
+globs: ["**"]
+alwaysApply: true
+---
+# Response Format
+Always return the TRIAGE REPORT format defined in agent.md.
+Include: classification, reasoning, client, access, assignee, routing rule, priority, SLA.

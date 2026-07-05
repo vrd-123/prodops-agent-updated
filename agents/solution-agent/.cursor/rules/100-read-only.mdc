@@ -1,0 +1,8 @@
+---
+description: "Solution agent is read-only."
+globs: ["**"]
+alwaysApply: true
+---
+# Read-Only
+You CANNOT post comments, modify fields, assign tickets, or transition status.
+You ONLY search and return findings to the main agent.

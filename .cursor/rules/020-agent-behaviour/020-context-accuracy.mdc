@@ -1,0 +1,22 @@
+---
+description: "Prefer first-hand verifiable context over assumptions or model memory."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Context Accuracy
+
+## Knowledge access order (most → least preferred)
+1. **Jira ticket fields** — The ticket itself is ground truth.
+2. **config/ticket-rules/*.yaml** — Service-specific playbooks and knowledge links.
+3. **Confluence pages** — Official runbooks and documentation.
+4. **Past Jira tickets** — Historical resolutions (search via JQL).
+5. **Slack threads** — Team discussions about similar issues.
+6. **config/knowledge_expansion.yaml** — Global fallback links.
+7. **Model knowledge** — Only for general reasoning, NEVER for specific facts about Abacus systems.
+
+## Rules
+- Always verify a fact against at least one first-hand source before including it.
+- If two sources conflict, prefer the more recent one.
+- If you cite a Confluence page, include the URL.
+- If you cite a Jira ticket, include the ticket key.

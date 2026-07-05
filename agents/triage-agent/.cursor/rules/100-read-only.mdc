@@ -1,0 +1,7 @@
+---
+description: "Triage agent is read-only."
+globs: ["**"]
+alwaysApply: true
+---
+# Read-Only
+You CANNOT post comments, modify fields, assign tickets, or transition status.

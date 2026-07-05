@@ -1,0 +1,96 @@
+# ============================================================================
+# ProdOps Ticket Rule: Domain Model (MDM / AMS / Data Quality)
+# ============================================================================
+# Team: MDM / AMS
+# Path: config/ticket-rules/prodops_domain_model.yaml
+
+keywords:
+  - domain model
+  - MDM
+  - Reltio
+  - AMS
+  - master data
+  - data quality
+  - DQ
+  - schema
+  - entity model
+
+owning_team:
+  name: "MDM / AMS"
+  slack_channel: "#mdm-oncall"
+  oncall_rotation: "MDM On-Call"
+  escalation_contact: "MDM Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Identify domain model entity affected"
+    details: "Determine which entity type is affected: Member, Provider, Claim, Authorization, etc."
+    tools: [Jira, Confluence]
+  - step: 2
+    action: "Check schema version and migration status"
+    details: "Verify the current domain model schema version and whether any recent migrations failed."
+    tools: [Databricks, Git]
+  - step: 3
+    action: "For data quality issues: check DQ rule index"
+    details: "Review the Enterprise DQ Rule Index for applicable rules and check rule execution results."
+    tools: [Databricks, Confluence]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4624678913"
+  - step: 4
+    action: "For AMS 2.0 issues: check AMS user guide"
+    details: "Review the AMS 2.0 User Guide for the specific feature or configuration issue."
+    tools: [Confluence]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/PRDDOC/pages/3446407189"
+  - step: 5
+    action: "Verify MDM pipeline status in Databricks"
+    details: "Check Databricks workflows for MDM pipeline health: ingestion, matching, merging stages."
+    tools: [Databricks]
+  - step: 6
+    action: "For entity model changes: follow domain model update procedure"
+    details: "Schema changes must follow the documented update procedure with backward compatibility checks."
+    tools: [Git, Databricks]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/MDM/pages/2541518849"
+  - step: 7
+    action: "Check Delta table health"
+    details: "Run DESCRIBE HISTORY on affected Delta tables. Check for failed MERGE operations or corruption."
+    tools: [Databricks, SQL]
+  - step: 8
+    action: "If compliance data: add compliance-review label"
+    details: "For PHI/PII data model changes, add 'compliance-review' label for HIPAA review."
+    tools: [Jira]
+  - step: 9
+    action: "Document resolution in ticket"
+    details: "Record affected entities, schema changes made, DQ rule adjustments, and data verification results."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Restructured Domain Model"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PRDDOC/pages/312508451"
+    description: "Current domain model entity structure, relationships, and versioning approach."
+  - title: "Updating the Domain Model"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/MDM/pages/2541518849"
+    description: "Procedure for making domain model schema changes with backward compatibility."
+  - title: "AMS 2.0 User Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PRDDOC/pages/3446407189"
+    description: "Application Management System 2.0 user guide: configuration, features, troubleshooting."
+  - title: "Enterprise DQ Rule Index"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4624678913"
+    description: "Enterprise data quality rule index: rule definitions, thresholds, and execution schedules."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-domain-model"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

@@ -1,0 +1,15 @@
+---
+description: "When a tool call or search fails, debug and retry once before reporting to user."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Error Recovery
+
+## On failure:
+1. Log the error internally.
+2. Identify the cause (rate limit, network, auth, bad query).
+3. If rate limit → wait and retry once.
+4. If bad query → fix the query and retry once.
+5. If auth/network → report to user: "Unable to access [source]. Proceeding with available data."
+6. Never silently fail — always surface what data was and wasn't available.

@@ -1,0 +1,97 @@
+# ============================================================================
+# ProdOps Ticket Rule: Auth / RBAC (IAM / Secrets / SSO)
+# ============================================================================
+# Team: Platform / Security
+# Path: config/ticket-rules/prodops_auth_rbac.yaml
+
+keywords:
+  - RBAC
+  - IAM
+  - access
+  - permission
+  - role
+  - secret
+  - credential
+  - SSO
+  - SAML
+  - identity
+  - IDM
+  - JIT
+
+owning_team:
+  name: "Platform / Security"
+  slack_channel: "#security-oncall"
+  oncall_rotation: "Security On-Call"
+  escalation_contact: "Security Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Identify access/permission issue"
+    details: "Determine the exact error: 403 Forbidden, AssumeRole failure, secret not found, SSO redirect loop."
+    tools: [Jira, CloudWatch]
+  - step: 2
+    action: "Check IAM role and policy"
+    details: "Review IAM role permissions, policy statements, and trust relationships in AWS Console."
+    tools: [AWS IAM Console]
+  - step: 3
+    action: "Verify RBAC role assignment"
+    details: "Check the user's RBAC role in the application's role management system. Verify role-to-permission mapping."
+    tools: [Admin UI, Database]
+  - step: 4
+    action: "For secret rotation: check Secrets Manager"
+    details: "Verify secret exists, is not expired, and rotation schedule is correct in AWS Secrets Manager."
+    tools: [AWS Secrets Manager]
+  - step: 5
+    action: "For SSO/SAML: check IdP configuration"
+    details: "Verify SAML metadata, assertion consumer URL, attribute mappings, and certificate validity."
+    tools: [IdP Admin, AWS SSO]
+  - step: 6
+    action: "For JIT access: follow ProdOps Self-Service Station"
+    details: "If temporary elevated access is needed, follow the self-service station process."
+    tools: [Jira Service Desk]
+    reference: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5787451393/ProdOps+Self-Service+Station"
+  - step: 7
+    action: "Verify fix with least-privilege principle"
+    details: "Ensure any permission changes follow least-privilege. No wildcard (*) permissions in production."
+    tools: [AWS IAM]
+  - step: 8
+    action: "If compliance-related: add compliance-review label"
+    details: "For HIPAA/PHI/PII access changes, add 'compliance-review' label for additional review."
+    tools: [Jira]
+  - step: 9
+    action: "Document resolution in ticket"
+    details: "Record the access change made, justification, and any follow-up audit requirements."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "RBAC Role Implementation"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3382771713"
+    description: "Three-tier RBAC model: platform roles, service roles, and data access roles."
+  - title: "IDM RBAC"
+    url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/316244093"
+    description: "Identity management RBAC configuration and user provisioning."
+  - title: "Access Change Management"
+    url: "https://abacusinsights.atlassian.net/servicedesk/customer/portal/7/article/914850165"
+    description: "Process for requesting, approving, and auditing access changes."
+  - title: "ProdOps Self-Service Station"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5787451393/ProdOps+Self-Service+Station"
+    description: "Self-service elevated access: S3 ops, DB cleanup, Databricks maintenance."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-infrastructure"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

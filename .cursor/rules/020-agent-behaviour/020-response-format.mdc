@@ -1,0 +1,51 @@
+---
+description: "Defines the structured format for all bot responses posted to tickets."
+globs: ["**"]
+alwaysApply: true
+---
+
+# Response Format
+
+## Rule
+The bot ONLY posts structured comments on Jira tickets. It does NOT:
+- Create branches or write code
+- Modify ticket fields directly (assignment is a recommendation, not an action)
+- Send emails or Slack messages
+- Create Confluence pages
+
+## Comment structure
+Every ticket comment follows this exact format:
+
+```
+## 🔍 ProdOps Bot Analysis
+
+### ✅ Validation
+- [x] Clear summary/title
+- [x] Correct issue type  
+- [ ] ❌ Missing: Environment details
+- [ ] ❌ Missing: Steps to reproduce
+[Completeness: 6/9 fields — INCOMPLETE]
+
+### 🏷️ Triage
+- **Classification**: customer_breakage
+- **Client**: [client name]
+- **Access**: Offshore-accessible
+- **Recommended assignee**: Deepak
+- **Priority**: P1 - High (SLA: 1h response / 8h resolution)
+- **Service**: Airbyte (matched via keywords: "CDC", "sync failure")
+
+### 📋 Related Past Issues
+- [PRODOPS-1234](url) — Similar CDC offset error resolved by clearing Airbyte state
+- [PRODOPS-2345](url) — Same client, connector timeout
+- **Solution steps** (from [Resolving CDC Offset Error](confluence-url)):
+  1. Clear saved offset in Airbyte UI
+  2. Trigger manual sync
+  3. Monitor for 2 sync cycles
+```
+
+## When no related issues found:
+```
+### 📋 Related Past Issues
+No related past issues found in Jira or Confluence.
+Assignee will investigate the root cause based on ticket priority.
+```

@@ -1,0 +1,94 @@
+# ============================================================================
+# ProdOps Ticket Rule: S3 Replication (Cross-Account / Delta Transfer)
+# ============================================================================
+# Team: Transporters / Platform
+# Path: config/ticket-rules/prodops_s3_replication.yaml
+
+keywords:
+  - S3 replication
+  - s3-replication
+  - cross-account
+  - cross account
+  - outbound S3
+  - inbound S3
+  - replication rule
+  - delta clone
+  - deep clone
+  - data sharing
+
+owning_team:
+  name: "Transporters / Platform"
+  slack_channel: "#transporters-oncall"
+  oncall_rotation: "Transporters On-Call"
+  escalation_contact: "Transporters Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "2 hours"
+    resolution_time: "16 hours"
+  P2:
+    response_time: "8 hours"
+    resolution_time: "48 hours"
+  P3:
+    response_time: "24 hours"
+    resolution_time: "120 hours"
+
+playbook:
+  - step: 1
+    action: "Check S3 replication status metrics"
+    details: "Review CloudWatch S3 replication metrics: ReplicationLatency, OperationsFailedReplication."
+    tools: [CloudWatch, AWS Console]
+  - step: 2
+    action: "Verify IAM roles and bucket policies"
+    details: "Check source bucket replication role, destination bucket policy, and cross-account trust."
+    tools: [AWS IAM, S3 Console]
+  - step: 3
+    action: "Check replication rule configuration"
+    details: "Verify replication rule: prefix filters, destination bucket, storage class, encryption settings."
+    tools: [AWS S3 Console]
+  - step: 4
+    action: "For cross-account: verify trust policies"
+    details: "Check IAM role trust policy allows the source account to assume the replication role."
+    tools: [AWS IAM]
+  - step: 5
+    action: "For Delta table transfer: check checkpoint consistency"
+    details: "Verify Delta transaction log and checkpoint files are replicated correctly."
+    tools: [Databricks, S3]
+  - step: 6
+    action: "For failed objects: check S3 event notifications"
+    details: "Review S3 event notifications and dead-letter queue for replication failures."
+    tools: [S3, SQS, CloudWatch]
+  - step: 7
+    action: "Validate replicated data completeness"
+    details: "Compare object counts and sizes between source and destination buckets."
+    tools: [AWS CLI, S3]
+  - step: 8
+    action: "If client-specific: check client bucket permissions"
+    details: "Verify the client's bucket policy allows the Abacus replication role to write objects."
+    tools: [AWS S3]
+  - step: 9
+    action: "Document resolution in ticket"
+    details: "Record root cause, affected objects, fix applied, and data integrity verification."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Cross Account S3 Replication"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5714706433"
+    description: "Architecture and setup for cross-account S3 replication between Abacus and client accounts."
+  - title: "Inbound/Outbound S3 Replication Onboarding"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/5544443922"
+    description: "Onboarding process for new inbound/outbound S3 replication pipelines."
+  - title: "S3 Replicator Runbook"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/CON/pages/3056500744"
+    description: "Operational runbook for S3 replication service: monitoring, alerting, failure recovery."
+  - title: "Delta Table Transfer"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/PMN2/pages/4734648339"
+    description: "Delta Lake table transfer between Databricks workspaces and S3 locations."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-databricks-outbound-infra"
+  branch_pattern: "feature/*"
+  base_branch: "develop"

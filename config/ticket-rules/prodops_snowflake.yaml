@@ -1,0 +1,100 @@
+# ============================================================================
+# ProdOps Ticket Rule: Snowflake (Data Loads / CDC / Snowshares)
+# ============================================================================
+# Team: DataOps
+# Path: config/ticket-rules/prodops_snowflake.yaml
+
+keywords:
+  - snowflake
+  - Snowflake
+  - snow
+  - COPY INTO
+  - snowshare
+  - Snowshare
+  - parquet
+  - bulk load
+  - staging
+  - timezone
+  - CDC load
+  - Delta Lake
+
+owning_team:
+  name: "DataOps"
+  slack_channel: "#dataops-oncall"
+  oncall_rotation: "DataOps On-Call"
+  escalation_contact: "DataOps Tech Lead"
+
+sla:
+  P0:
+    response_time: "15 minutes"
+    resolution_time: "4 hours"
+  P1:
+    response_time: "1 hour"
+    resolution_time: "8 hours"
+  P2:
+    response_time: "4 hours"
+    resolution_time: "24 hours"
+  P3:
+    response_time: "8 hours"
+    resolution_time: "72 hours"
+
+playbook:
+  - step: 1
+    action: "Check Snowflake load status table"
+    details: "Query the load monitoring table for recent failures. Note job ID, table name, error code."
+    tools: [Snowflake UI, SQL]
+  - step: 2
+    action: "Identify failed load job"
+    details: "Check COPY_HISTORY view for the specific failed COPY INTO operation. Note file name and error."
+    tools: [Snowflake UI]
+  - step: 3
+    action: "Check Databricks export logs"
+    details: "Review Databricks workflow that exports data to staging S3. Check for job failures or data issues."
+    tools: [Databricks]
+  - step: 4
+    action: "Verify Parquet files in staging"
+    details: "Check S3 staging bucket for expected Parquet files. Verify file count, size, and timestamps."
+    tools: [AWS S3, Databricks]
+  - step: 5
+    action: "Check COPY INTO errors"
+    details: "Review COPY INTO error details: schema mismatch, file corruption, permission issues, or format errors."
+    tools: [Snowflake UI]
+  - step: 6
+    action: "For CDC duplicates: check Delta Lake merge logic"
+    details: "If duplicate rows appeared, verify the Delta Lake MERGE operation and deduplication logic."
+    tools: [Databricks, SQL]
+  - step: 7
+    action: "For timezone issues: verify UTC conversion config"
+    details: "Check timezone handling in export pipeline. All timestamps should be UTC before Snowflake load."
+    tools: [Databricks, Snowflake]
+  - step: 8
+    action: "For Snowshare issues: check outbound sharing config"
+    details: "Verify Snowshare configuration, reader account access, and share object permissions."
+    tools: [Snowflake UI]
+  - step: 9
+    action: "Retry failed load"
+    details: "After fixing the root cause, re-trigger the load pipeline and monitor for successful completion."
+    tools: [Databricks, Airflow]
+  - step: 10
+    action: "Document resolution in ticket"
+    details: "Record root cause, fix applied, affected tables, and data integrity verification results."
+    tools: [Jira]
+
+knowledge_links:
+  - title: "Databricks to Snowflake Integration Pipeline"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/3211427856"
+    description: "End-to-end pipeline design: Delta Lake export → S3 staging → Snowflake COPY INTO."
+  - title: "Delta Lake Concurrency Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5154013192"
+    description: "Delta table concurrency, MERGE deduplication, time travel, and vacuum scheduling."
+  - title: "Snowflake Data Load Alerting"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/SNOW/pages/1718321167"
+    description: "Alerting configuration for Snowflake load failures and data freshness monitoring."
+  - title: "Snowflake Snowshares Guide"
+    url: "https://abacusinsights.atlassian.net/wiki/spaces/NGEN/pages/4879253525"
+    description: "Snowshare setup, reader account management, and outbound data sharing configuration."
+
+repository:
+  url: "https://gitlab.com/abacus-insights/ng-abacus-insights-runtime"
+  branch_pattern: "feature/*"
+  base_branch: "develop"
