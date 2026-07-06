@@ -52,16 +52,6 @@ prodops-agent/
 └── .gitignore
 ```
 
-## Key Differences from Transporters Agent
-
-| Aspect | Transporters Agent | ProdOps Agent |
-|--------|-------------------|---------------|
-| Purpose | Code changes + engineering | Ticket analysis + comments |
-| Output | Code, PRs, branches | Jira ticket comments only |
-| Workflow | 10 steps (incl. code) | 6 steps (no code) |
-| Subagents | DSP, QA, Security | Validator, Triage, Solution, Judge |
-| Commands | 15 (incl. PR, deploy) | 5 (validate, triage, solution, classify, explain) |
-
 ## Guardrails
 
 - **Never skip workflow steps** — even for small tasks
