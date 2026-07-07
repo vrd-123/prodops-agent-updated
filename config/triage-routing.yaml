@@ -1,20 +1,46 @@
 # ============================================================================
-# ProdOps Triage Routing Configuration
+# ProdOps Triage Routing Configuration — v2 (Multi-Axis, LLM-Guided)
 # ============================================================================
 # Path: config/triage-routing.yaml
-# Read by: triage-agent, ticket-triage/SKILL.md
+# Read by: triage-agent, ticket-triage/SKILL.md, consultation-prompts/SKILL.md
 #
-# Defines client access classification and default handler assignment.
+# Architecture:
+#   Instead of a single flat classification, this config defines THREE
+#   independent axes. The triage agent assigns labels on ALL axes
+#   simultaneously. This matches how the ProdOps board actually uses
+#   labels (39% of tickets carry 2+ labels from different axes).
+#
+# Axes:
+#   1. impact_type   — exactly ONE required  (what kind of issue is this?)
+#   2. service_tags  — zero or more          (which service/client is involved?)
+#   3. workflow_tags — zero or more          (what workflow state applies?)
+#
+# Classification Method:
+#   The triage agent uses LLM semantic reasoning guided by the descriptions
+#   and examples below — NOT pure keyword matching. Keywords are provided
+#   as HINTS to assist matching, but the agent MUST read the full ticket
+#   context and use the description + examples to make the final decision.
 # ============================================================================
 
-# ---------------------------------------------------------------------------
-# Ticket Classification Categories
-# ---------------------------------------------------------------------------
-categories:
+
+# ============================================================================
+# AXIS 1: Impact Type (exactly ONE required)
+# ============================================================================
+# This answers: "What KIND of issue is this?"
+# The agent MUST pick exactly one. If genuinely ambiguous, pick the one
+# with the most customer-facing impact and note the ambiguity.
+# ============================================================================
+impact_types:
+
   customer_breakage:
-    label: "Customer Breakage"
-    description: "Customer-facing impact — data not loading, reports broken, API errors affecting clients"
-    keywords:
+    label: "customer_breakage"
+    description: >
+      End-client or customer is directly impacted RIGHT NOW — data not
+      loading in client portals, reports showing wrong numbers, API errors
+      visible to client users, client-facing dashboards broken, client
+      cannot access their environment. The key test: "Is a client seeing
+      something broken or missing?"
+    keywords_hint:
       - customer
       - client
       - user-facing
@@ -23,11 +49,28 @@ categories:
       - reports broken
       - API error
       - service unavailable
+      - dashboard
+      - discrepancies
+      - not able to access
+      - missing records
+      - Power BI
+    examples:
+      - "BCBSNC users are not able to access the new Power BI Dashboard published on 7/06"
+      - "FSI completes in seconds without loading any data"
+      - "Oregon PAI - May 2026 Abacus Insights Report Discrepancies"
+      - "GW CO would like us to run the tenant report filtering out non-legitimate API calls"
 
   internal_breakage:
-    label: "Internal Breakage"
-    description: "Internal systems/tooling issues — pipeline failures, infra problems, monitoring gaps"
-    keywords:
+    label: "internal_breakage"
+    description: >
+      Internal systems, pipelines, infrastructure, or tooling are broken,
+      but the client is NOT directly seeing the impact (yet). Includes:
+      pipeline failures, pod crashes, Airflow DAG failures, data copier
+      jobs stuck, Databricks cluster issues, S3 replication errors,
+      Snowflake load failures, authentication token expiry in internal
+      systems. The key test: "Is this an internal system that broke,
+      even if fixing it prevents future client impact?"
+    keywords_hint:
       - pipeline failure
       - infrastructure
       - monitoring
@@ -36,41 +79,366 @@ categories:
       - deployment failure
       - cluster issue
       - pod crash
+      - DAG failure
+      - workflow failed
+      - data copier
+      - Databricks
+      - Snowflake
+      - S3
+      - token expiry
+      - spot instance
+      - SFTP
+      - copy data
+      - authentication error
+    examples:
+      - "BCBSA Clinical Datasource (ADT) - Copy Data files from BCI Prod to BCI Dev"
+      - "Copy existing manifest files from domain-specific S3 paths to centralized location"
+      - "FHIR Cleanup of Provider Member attribution in NV-Stg"
+      - "bcidaho-stg: Authentication Token Expiry Error in Stage Databricks Snowflake Load"
+      - "Multiple Clover Prod Workflows Failed Due to Spot Instance Termination"
+
+  client_request:
+    label: "client_request"
+    description: >
+      A client has made a specific request — configuration change, data
+      extract, new setup, SFTP enablement, environment provisioning,
+      cleanup of directories. Nothing is broken; the client is asking
+      for something to be done. The key test: "Is this a request FOR
+      something, not a report OF something broken?"
+    keywords_hint:
+      - request
+      - client asks
+      - please set up
+      - configure
+      - enable
+      - provision
+      - extract
+      - clean up
+      - new tenant
+    examples:
+      - "BCI - Clean up multiple directories in S3 for BCI in prod environment"
+      - "BCBSM - Enable SFTP for tenant"
+      - "Gainwell Migration Foundry - update API key to mt-stg workspace"
 
   enhancement:
-    label: "Enhancement"
-    description: "Improvements, new capabilities, process changes, feature requests"
-    keywords:
+    label: "enhancement"
+    description: >
+      Internal improvement, feature request, optimization, or process
+      change. No urgency, no breakage, no client request. The key test:
+      "Is this improving something that already works, or adding a new
+      capability?"
+    keywords_hint:
       - enhancement
       - improvement
       - feature request
       - new capability
       - process change
       - optimization
+      - upgrade
+      - policy upgrade
+    examples:
+      - "Air policy upgrade required for workflows in BCI Prod"
+      - "Upload the file in dev and stg both environment"
+      - "Add retry logic to data copier sync jobs"
 
-# ---------------------------------------------------------------------------
+
+# ============================================================================
+# AXIS 2: Service / Client Tags (zero or more)
+# ============================================================================
+# This answers: "Which service, client, or product area is involved?"
+# The agent applies ALL that are relevant. A ticket can have 0, 1, or
+# multiple service tags. Use the match_if description to decide — do NOT
+# rely solely on keyword presence.
+# ============================================================================
+service_tags:
+
+  data_copier_yes:
+    label: "data_copier_yes"
+    match_if: >
+      The ticket involves copying data files between environments (prod→dev,
+      prod→stg, cross-account S3 copies), data copier service, data sync
+      jobs, or any "copy data from X to Y" task. This is the 3rd most
+      common label on the board.
+    keywords_hint:
+      - data copier
+      - copy data
+      - copy files
+      - cross-account
+      - prod to dev
+      - prod to stg
+      - S3 copy
+      - data sync
+      - delta clone
+      - deep clone
+      - data-lake
+    examples:
+      - "BCBSA Clinical Datasource (ADT) - Copy Data files from BCI Prod to BCI Dev"
+      - "Copy files from abacus-medstar-data-lake-prd to dev and stg"
+      - "CMS TRR (EDPS) - Copy Data files from BCI Prod to BCI Dev"
+    co_occurrence_note: "Almost always paired with internal_breakage."
+
+  BlueKC:
+    label: "BlueKC"
+    match_if: >
+      The ticket involves Blue Cross Blue Shield of Kansas City (BlueKC)
+      client, their environments, data, FSI runs, or 0057-related
+      workflows specific to BlueKC.
+    keywords_hint:
+      - BlueKC
+      - Blue KC
+      - bluekc
+      - Blue Cross Kansas City
+    examples:
+      - "BlueKC: Run FSI for bluekc-pvd-0057-historical-workflow"
+      - "BlueKC: FSI run failed in production"
+
+  BCI:
+    label: "BCI"
+    match_if: >
+      The ticket involves BCI (Blue Cross Idaho) client, BCI environments,
+      BCI data, or BCI-specific workflows and configurations.
+    keywords_hint:
+      - BCI
+      - bcidaho
+      - Blue Cross Idaho
+      - bci-prod
+      - bci-dev
+      - bci-stg
+    examples:
+      - "bcidaho-stg: Authentication Token Expiry Error in Stage Databricks Snowflake Load"
+      - "BCI - Clean up multiple directories in S3 for BCI in prod environment"
+
+  gainwell:
+    label: "gainwell"
+    match_if: >
+      The ticket involves Gainwell client, Gainwell API, Gainwell
+      environments, GW tenant, MDP, or Gainwell-specific services.
+      Note: GWL-* workflow tags handle Gainwell workflow dependencies
+      separately — this tag is for the Gainwell client/service context.
+    keywords_hint:
+      - gainwell
+      - Gainwell
+      - GW API
+      - GW CO
+      - GW tenant
+      - MDP
+    examples:
+      - "GW CO would like us to run the tenant report filtering out non-legitimate API calls"
+      - "Gainwell Migration Foundry - Montana - update API key to mt-stg workspace"
+
+  GW-OR:
+    label: "GW-OR"
+    match_if: >
+      The ticket specifically involves Gainwell Oregon (OR) environment,
+      Oregon PAI, or Oregon-specific data/reports.
+    keywords_hint:
+      - GW-OR
+      - Oregon
+      - OR PAI
+      - Oregon PAI
+    examples:
+      - "Oregon PAI - May 2026 Abacus Insights Report Discrepancies"
+
+  Manifest:
+    label: "Manifest"
+    match_if: >
+      The ticket involves manifest files, manifest generation, manifest
+      copying, or manifest-related configuration across environments.
+    keywords_hint:
+      - manifest
+      - manifest files
+      - manifest generation
+    examples:
+      - "Copy existing manifest files from domain-specific S3 paths to centralized location"
+
+  ngen:
+    label: "ngen"
+    match_if: >
+      The ticket involves ngen (next-gen) pipeline, ngen infrastructure,
+      ngen-specific services, or ngen environment configurations.
+    keywords_hint:
+      - ngen
+      - next-gen
+      - ng-
+      - next gen
+    examples:
+      - "Copy existing manifest files from domain-specific S3 paths to centralized location (ngen pipeline)"
+
+  FHIR:
+    label: "FHIR"
+    match_if: >
+      The ticket involves FHIR resources, FHIR store, FHIR API, FHIR
+      cleanup, FHIR bulk operations, HealthLake, or any FHIR-related
+      data operations.
+    keywords_hint:
+      - FHIR
+      - HealthLake
+      - FHIR store
+      - FHIR cleanup
+      - FHIR API
+      - Formulary API
+      - Provider API
+      - bulk FHIR
+    examples:
+      - "FHIR Cleanup of Provider Member attribution in NV-Stg"
+      - "FHIR Cleanup request in CT STG Environment for Formulary API"
+      - "BlueKC: Run FSI for bluekc-pvd-0057-historical-workflow"
+
+
+# ============================================================================
+# AXIS 3: Workflow / Dependency Tags (zero or more)
+# ============================================================================
+# This answers: "What workflow state or dependency flag applies?"
+# These are process/status flags that layer on top of the impact type
+# and service tags. Apply ALL that are relevant.
+# ============================================================================
+workflow_tags:
+
+  GWL-Dependency:
+    label: "GWL-Dependency"
+    match_if: >
+      The ticket is blocked by or depends on a Gainwell-side action,
+      GWL team response, or any external Gainwell dependency. The work
+      cannot proceed without Gainwell's involvement or approval. This
+      is the 4th most common label on the board.
+    keywords_hint:
+      - GWL
+      - Gainwell dependency
+      - blocked by Gainwell
+      - waiting on GWL
+      - GW dependency
+    examples:
+      - "FHIR Cleanup of Provider Member attribution (gw02-pva-0057-dataingestion) in NV-Stg"
+      - "FHIR Cleanup request in CT STG Environment for Formulary API"
+      - "FHIR Cleanup request in VT DEV Environment for Provider API"
+    co_occurrence_note: "Most commonly pairs with customer_breakage (73%) or internal_breakage (18%)."
+
+  GWL-Blocker:
+    label: "GWL-Blocker"
+    match_if: >
+      The ticket is actively blocking Gainwell deliverables or timelines.
+      More urgent than GWL-Dependency — this means Gainwell work is
+      stopped because of this issue.
+    keywords_hint:
+      - GWL blocker
+      - blocking Gainwell
+      - Gainwell blocked
+    examples:
+      - "FHIR Cleanup request in GW01 IN UAT Environment for Formulary API"
+
+  GWL-0057:
+    label: "GWL-0057"
+    match_if: >
+      The ticket involves GWL-0057 interop rule, CMS-0057 compliance,
+      Onyx interoperability, or 0057-specific workflows. This is a
+      regulatory/compliance context tag.
+    keywords_hint:
+      - "0057"
+      - GWL-0057
+      - interop
+      - CMS rule
+      - Onyx
+      - interoperability
+    examples:
+      - "gw01-epa-0057-dataingestion-workflow failed after running for nearly 20 hrs"
+
+  GWL-0057-IN:
+    label: "GWL-0057-IN"
+    match_if: >
+      The ticket is specifically an INBOUND GWL-0057 interop task — data
+      flowing IN to the system under the 0057 rule.
+    keywords_hint:
+      - GWL-0057-IN
+      - 0057 inbound
+      - dataingestion
+    examples:
+      - "gw01-epa-0057-dataingestion-workflow failed after running for nearly 20 hrs"
+
+  SWAT-TODO:
+    label: "SWAT-TODO"
+    match_if: >
+      The ticket is flagged for SWAT team follow-up, on-call action,
+      or has been escalated to the SWAT rotation for urgent handling.
+    keywords_hint:
+      - SWAT
+      - SWAT-TODO
+      - on-call
+      - escalated
+    examples:
+      - "BCBSM - Enable SFTP for tenant"
+
+  pipeline-failure:
+    label: "pipeline-failure"
+    match_if: >
+      A data pipeline, ETL job, Airflow DAG, scheduled workflow, or
+      automated data processing job has failed or errored out.
+    keywords_hint:
+      - pipeline failure
+      - pipeline failed
+      - workflow failed
+      - DAG failure
+      - ETL error
+      - job failed
+      - spot instance termination
+    examples:
+      - "Multiple Clover Prod Workflows Failed Due to Spot Instance Termination"
+
+  UAT:
+    label: "UAT"
+    match_if: >
+      The ticket is related to UAT (User Acceptance Testing) environment,
+      UAT validation, or UAT-specific operations.
+    keywords_hint:
+      - UAT
+      - user acceptance
+      - staging test
+    examples:
+      - "FHIR Cleanup request in GW01 IN UAT Environment for Formulary API"
+
+  Deliverable:
+    label: "Deliverable"
+    match_if: >
+      The ticket represents or is tied to a formal deliverable — a
+      milestone, contractual obligation, or scheduled delivery.
+    keywords_hint:
+      - deliverable
+      - milestone
+      - due date
+      - contractual
+    examples:
+      - "Interop Databricks AccessDeniedException (blocking deliverable)"
+
+
+# ============================================================================
 # Client Access Classification
-# ---------------------------------------------------------------------------
-# Onshore-only: Only onshore team members can access this client's data/systems
-# Offshore-accessible: Both onshore and offshore team members can work on these
-# ---------------------------------------------------------------------------
+# ============================================================================
+# Determines whether a ticket can be worked on by offshore team members
+# or is restricted to onshore-only personnel due to client data policies.
+# ============================================================================
 onshore_only_clients:
   - "Cambia"
   - "Highmark"
-  # Add more clients as needed — these are placeholders
-  # The actual list should be maintained by the ProdOps team lead
+  # Add more clients as needed — maintained by the ProdOps team lead.
 
 offshore_accessible_clients:
   - "BCBSMA"
   - "Gainwell"
   - "Inovalon"
   - "Cotiviti"
-  # Add more clients as needed
+  - "BlueKC"
+  - "BCI"
+  - "BCBSNC"
+  - "BCBSM"
+  - "MedStar"
+  - "Clover"
+  # Add more clients as needed.
 
-# ---------------------------------------------------------------------------
-# Default Handler Assignment
-# ---------------------------------------------------------------------------
+
+# ============================================================================
+# Default Handler Assignment / Routing
+# ============================================================================
 routing:
+
   onshore_default:
     name: "Stephen"
     note: "Default handler for onshore-only client tickets"
@@ -90,3 +458,36 @@ routing:
   p0_override:
     action: "escalate_to_swat"
     note: "P0 tickets go to SWAT on-call regardless of client routing"
+
+
+# ============================================================================
+# Classification Guidelines (for LLM reasoning)
+# ============================================================================
+# These guidelines help the triage agent handle edge cases that pure
+# keyword matching would get wrong.
+# ============================================================================
+classification_guidelines:
+
+  ambiguity_rules:
+    - rule: "If a ticket has BOTH customer-facing AND internal impact, pick customer_breakage as the impact_type (higher severity). The internal aspect will be captured via service/workflow tags."
+    - rule: "If a pipeline failure (internal) caused client-visible data issues, classify as customer_breakage + pipeline-failure workflow tag."
+    - rule: "If a data copy request is for fixing a broken environment, classify as internal_breakage + data_copier_yes. If the copy is for a client request, classify as client_request + data_copier_yes."
+    - rule: "GWL-Dependency vs GWL-Blocker: Use GWL-Dependency when we are WAITING on Gainwell. Use GWL-Blocker when Gainwell is WAITING on us."
+
+  keyword_override_rules:
+    - rule: "Do NOT classify based on keyword presence alone. The word 'client' in 'client S3 bucket' does not make it customer_breakage — read the full context."
+    - rule: "The word 'pipeline' in 'pipeline failure' does not automatically mean internal_breakage — if the pipeline failure caused client-visible impact, it is customer_breakage."
+    - rule: "A ticket mentioning 'FHIR' could be any impact type — FHIR cleanup requests are typically internal_breakage, but FHIR API errors visible to clients are customer_breakage."
+
+  multi_label_patterns:
+    - pattern: "Data copy tasks → internal_breakage + data_copier_yes (always)"
+    - pattern: "FHIR cleanup requests with GW dependency → internal_breakage + FHIR + GWL-Dependency"
+    - pattern: "Client-facing FHIR API errors → customer_breakage + FHIR + [client tag]"
+    - pattern: "BlueKC FSI runs → internal_breakage + BlueKC (unless FSI failure impacts client, then customer_breakage)"
+    - pattern: "0057 workflow failures → internal_breakage + GWL-0057 + GWL-0057-IN (if inbound)"
+    - pattern: "Pipeline failure with client impact → customer_breakage + pipeline-failure + [client tag]"
+
+  confidence_thresholds:
+    high: "4-5: Classification is clear from ticket content. Proceed without flag."
+    medium: "3: Reasonable classification but some ambiguity. Proceed but note uncertainty."
+    low: "1-2: Insufficient information or highly ambiguous. Flag for manual review."
