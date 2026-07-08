@@ -1,0 +1,7 @@
+# Core: fetch.py uses only stdlib (urllib, json, pathlib) — no deps!
+
+# Optional: for PDF text extraction & scanned-PDF-to-image conversion
+PyMuPDF>=1.24
+
+# Optional: for .env file loading (fetch.py has a manual fallback)
+python-dotenv>=1.0

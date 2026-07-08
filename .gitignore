@@ -25,3 +25,4 @@ venv/
 # Environment
 .env
 .env.local
+workspace/attachments/

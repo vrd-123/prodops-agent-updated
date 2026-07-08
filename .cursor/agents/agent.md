@@ -53,6 +53,7 @@ A **Judge agent** evaluates the quality of your combined output before it is pos
 | solution | solution-agent (subagent) | Step 4: Past-issue search and recommendation |
 | judge | judge-agent (subagent) | Step 5: Quality evaluation of combined output |
 | knowledge | skill: knowledge-expansion | When deeper Confluence/Jira context is needed |
+| attachments | skill: attachment-reader |When ticket contains an attachment|
 
 ## Subagent index
 | id | name | workspace_folder | agent_path | skills_path | owner |

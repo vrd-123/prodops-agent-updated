@@ -34,6 +34,11 @@ CHECKLIST (from config/validation-checklist.yaml):
 
 For each checklist item, report: ✅ Present / ❌ Missing / ⚠️ Incomplete
 Provide a completeness score: X/9
+
+If ticket contains attachments, you may invoke the attachment-reader skill to fetch and read them as given below:
+
+> 1. **Fetch attachments first**: Run `python scripts/attachment_reader/fetch.py {ISSUE_KEY}` in the terminal, then read `workspace/attachments/{ISSUE_KEY}/_manifest.md`. Read all text files and view all images listed in the manifest.
+> 2. Provides the full raw ticket content — title, description, labels, severity field, affected system — **plus the content extracted from attachments**.
 ```
 
 ---
