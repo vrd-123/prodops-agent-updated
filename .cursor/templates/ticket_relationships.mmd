@@ -1,0 +1,24 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#0052CC', 'primaryTextColor': '#fff', 'lineColor': '#6B778C', 'fontSize': '13px'}}}%%
+
+graph LR
+    MAIN["🎫 {{TICKET_KEY}}<br/>{{TICKET_SUMMARY}}"]
+
+    LINKED_1["{{LINKED_KEY_1}}<br/>{{LINKED_SUMMARY_1}}"]
+    LINKED_2["{{LINKED_KEY_2}}<br/>{{LINKED_SUMMARY_2}}"]
+
+    PERSON_1(("👤<br/>{{PERSON_1_NAME}}<br/>{{PERSON_1_ROLE}}"))
+    PERSON_2(("👤<br/>{{PERSON_2_NAME}}<br/>{{PERSON_2_ROLE}}"))
+    PERSON_3(("👤<br/>{{PERSON_3_NAME}}<br/>{{PERSON_3_ROLE}}"))
+
+    LINKED_1 -->|"{{RELATION_1}}"| MAIN
+    LINKED_2 -->|"{{RELATION_2}}"| MAIN
+    MAIN --- PERSON_1
+    MAIN --- PERSON_2
+    MAIN --- PERSON_3
+
+    style MAIN fill:#0052CC,stroke:#003884,color:#fff
+    style LINKED_1 fill:#DEEBFF,stroke:#0052CC,color:#172B4D
+    style LINKED_2 fill:#DEEBFF,stroke:#0052CC,color:#172B4D
+    style PERSON_1 fill:#F4F5F7,stroke:#6B778C,color:#172B4D
+    style PERSON_2 fill:#F4F5F7,stroke:#6B778C,color:#172B4D
+    style PERSON_3 fill:#F4F5F7,stroke:#6B778C,color:#172B4D

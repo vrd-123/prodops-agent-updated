@@ -1,0 +1,18 @@
+%%{init: {'theme': 'base', 'themeVariables': {'actorBkg': '#0052CC', 'actorTextColor': '#fff', 'actorBorder': '#003884', 'activationBorderColor': '#0052CC', 'signalColor': '#172B4D', 'signalTextColor': '#172B4D', 'noteBkgColor': '#DEEBFF', 'noteBorderColor': '#0052CC', 'noteTextColor': '#172B4D', 'fontSize': '13px'}}}%%
+
+sequenceDiagram
+    participant R as {{REPORTER}}
+    participant T as {{TEAM_LEAD}}
+    participant I as {{INFRA_PERSON}}
+    participant C as {{CLIENT}}
+
+    R->>T: {{ACTION_1}}
+    Note over R,T: {{NOTE_1}}
+    T->>R: {{ACTION_2}}
+    R->>I: {{ACTION_3}}
+    I-->>R: {{ACTION_4}}
+    R->>C: {{ACTION_5}}
+    C-->>R: {{ACTION_6}}
+    R->>I: {{ACTION_7}}
+    I->>I: {{ACTION_8}}
+    Note over I: {{NOTE_2}}
