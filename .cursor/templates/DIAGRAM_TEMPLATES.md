@@ -323,6 +323,84 @@ flowchart TD
 
 ---
 
+## Template 7: API & Integrations Call Flow
+
+**Use when** the ticket involves API errors, integration failures, webhooks, OAuth, FHIR APIs, or external service calls.
+
+**Mandatory rule:** Every API/integration diagram MUST show **where calls originate** (caller component + environment) and **what they target** (full endpoint URL or service path, HTTP method, auth type). Edge labels must include method + path (e.g. `POST /api/event/nasco`).
+
+Derive all nodes and edges from the **target ticket's** description, comments, and logs. Placeholder structure only:
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#4CAF50',
+  'primaryTextColor':'#ffffff',
+  'primaryBorderColor':'#2E7D32',
+  'lineColor':'#2196F3',
+  'secondaryColor':'#FF9800',
+  'tertiaryColor':'#9C27B0',
+  'background':'#1E1E1E',
+  'mainBkgColor':'#2D2D2D',
+  'textColor':'#FFFFFF',
+  'edgeLabelBackground':'#1E1E1E',
+  'clusterBkg':'#3D3D3D',
+  'clusterBorder':'#4CAF50',
+  'defaultLinkColor':'#2196F3',
+  'titleColor':'#FFFFFF',
+  'tertiaryBorderColor':'#7B1FA2'
+}}}%%
+flowchart LR
+    subgraph Caller["🏥 Caller — Where calls are made"]
+        APP[⚙️ Client App / Job<br/>env + component name]
+    end
+
+    subgraph Gateway["🌐 Routing Layer"]
+        EDGE[🌐 API Gateway / Proxy<br/>Apigee / ALB / Ingress]
+    end
+
+    subgraph Target["🎯 Target — What is called"]
+        API[⚙️ Abacus API Service<br/>host + route path]
+        AUTH[🔒 Auth Layer<br/>IAM / OAuth / API Key]
+    end
+
+    subgraph Response["📥 Response"]
+        OK[✅ 200 Success]
+        ERR[❌ 4xx/5xx Error<br/>error message from logs]
+    end
+
+    APP -->|"METHOD /path<br/>protocol + auth"| EDGE
+    EDGE -->|"forward to backend"| API
+    AUTH -.->|"validates"| API
+    API -->|"success"| OK
+    API -->|"failure"| ERR
+
+    style APP fill:#00D9FF,stroke:#0097A7,color:#000
+    style EDGE fill:#FF9800,stroke:#E65100,color:#000
+    style API fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style AUTH fill:#F44336,stroke:#B71C1C,color:#fff
+    style OK fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style ERR fill:#F44336,stroke:#B71C1C,color:#fff
+```
+
+### API & Integrations — Required Edge Labels
+
+| Edge | Must include |
+|------|--------------|
+| Caller → Gateway | HTTP method, path, protocol (HTTPS), auth type (SigV4, OAuth, API key) |
+| Gateway → Target | Backend host or service name, forwarded path |
+| Target → Response | Status code (200, 403, 500) and error class from ticket logs |
+
+### API & Integrations — Data Sources (priority order)
+
+1. Ticket description — URLs, endpoints, error codes
+2. Comments — API gateway logs, request/response samples
+3. Attachments — log files with HTTP traces, screenshots of API consoles
+4. Confluence design docs — only if linked in ticket or service config
+
+**Do NOT** draw a generic "API box" without naming the caller, endpoint, and method.
+
+---
+
 ## Usage Guidelines
 
 1. **Always include the** `%%{init:}%%` directive at the start of every diagram
@@ -335,6 +413,7 @@ flowchart TD
 8. **Remove unused placeholder nodes** — only include what the ticket data supports
 9. **Add more nodes** if the ticket has more steps/people/issues — copy the pattern
 10. **Never reuse another ticket's diagram content** — derive nodes and edges from the ticket being explained
+11. **API & Integrations tickets** — use Template 7; every call arrow must show caller → endpoint with method, path, and auth; include error responses from logs when present
 
 ---
 

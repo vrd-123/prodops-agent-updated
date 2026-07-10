@@ -1,0 +1,1 @@
+../.cursor/templates/DIAGRAM_TEMPLATES.md
