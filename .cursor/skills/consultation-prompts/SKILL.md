@@ -35,10 +35,29 @@ CHECKLIST (from config/validation-checklist.yaml):
 For each checklist item, report: ✅ Present / ❌ Missing / ⚠️ Incomplete
 Provide a completeness score: X/9
 
-If ticket contains attachments, you may invoke the attachment-reader skill to fetch and read them as given below:
+If ticket contains attachments, invoke the attachment-reader skill as follows:
 
-> 1. **Fetch attachments first**: Run `python scripts/attachment_reader/fetch.py {ISSUE_KEY}` in the terminal, then read `workspace/attachments/{ISSUE_KEY}/_manifest.md`. Read all text files and view all images listed in the manifest.
-> 2. Provides the full raw ticket content — title, description, labels, severity field, affected system — **plus the content extracted from attachments**.
+> **ATTACHMENT INSTRUCTIONS — PHI PROTECTION REQUIRED**
+>
+> 1. **Fetch attachments**: Run `python scripts/attachment_reader/fetch.py {ISSUE_KEY}`
+>    in the terminal.
+>
+> 2. **Read the manifest FIRST**: Open `workspace/attachments/{ISSUE_KEY}/_manifest.md`.
+>    Check the PHI Status column for every file before reading anything.
+>
+> 3. **PHI Pre-Check (MANDATORY)**:
+>    - Files marked `🚨 QUARANTINED` → DO NOT read. Note: "Attachment quarantined —
+>      PHI detected. Human review required."
+>    - Files marked `🚫 BLOCKED` → DO NOT read. Note: "Attachment blocked — PHI-risk
+>      type/filename. Review directly in Jira."
+>    - Files marked `✅ Clean` → Read/view normally, but apply the first-10-lines
+>      check (stop if you see SSN/MRN/DOB/patient names).
+>    - Images marked `✅ Clean` → View them, but DO NOT describe visible PHI.
+>
+> 4. **Include PHI Protection Summary** in your validation output (see guardrails Rule I-8).
+>
+> 5. Use the clean attachment content — error messages, config details, screenshots —
+>    to inform your completeness assessment.
 ```
 
 ---
@@ -299,6 +318,33 @@ TRIAGE-SPECIFIC CHECKS
 - Verify confidence score is justified
 - If confidence ≤ 2, verify needs_manual_review is true
 - Check for keyword-only classification (flag if reasoning is just "keyword X was present")
+
+═══════════════════════════════════════════════════════════════
+PHI / PII COMPLIANCE CHECK (AUTOMATIC FAIL CONDITIONS)
+═══════════════════════════════════════════════════════════════
+Automatically assign FAIL (score = 0) and flag for immediate human review if ANY
+of the following are present in the validation, triage, or solution output:
+
+- Social Security Numbers (###-##-####)
+- Medical Record Numbers (MRN, MRN#, Medical Record Number)
+- Dates of Birth (DOB, Date of Birth + date value)
+- Patient or member names paired with identifiers
+- Insurance policy numbers
+- FHIR Patient resource content (raw JSON with patient data)
+- Any content from a file that was marked QUARANTINED or BLOCKED in the manifest
+
+If a PHI leak is detected:
+1. Set score = 0, result = FAIL
+2. Add note: "⚠️ HIPAA VIOLATION RISK — PHI detected in output. Immediate human
+   review required. Do NOT post this output to Jira or Slack."
+3. Identify which attachment or field was the source of the leak.
+
+═══════════════════════════════════════════════════════════════
+PHI PROTECTION AUDIT
+═══════════════════════════════════════════════════════════════
+Check that the validation output includes a PHI Protection Summary section.
+If attachments were processed but no PHI Protection Summary is present,
+deduct 1.0 point from the Completeness score and note the omission.
 
 Return: Score (0-10), PASS/FAIL (threshold: 6.0), improvement suggestions.
 ```

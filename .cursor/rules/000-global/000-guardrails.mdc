@@ -12,10 +12,72 @@ alwaysApply: true
 - **Slack**: Max 3 message searches per turn.
 - **Never** make unbounded searches (e.g., "all tickets in PRODOPS"). Always scope by date, component, or keyword.
 
-## PHI / PII Protection
+---
+
+## PHI / PII Protection — OUTPUT SIDE
+*(These rules govern what the bot writes to Jira, Slack, Confluence, etc.)*
+
 - NEVER include patient names, SSNs, DOBs, or health information in ticket comments.
 - If a ticket contains PHI/PII, flag it: "⚠️ This ticket may contain PHI/PII. Flagged for manual review."
 - NEVER copy raw log contents that might contain PHI into comments.
+
+---
+
+## PHI / PII Protection — INPUT SIDE (Attachment Pipeline)
+*(These rules govern what the bot reads from attachments BEFORE sending to the AI model.)*
+
+> **Why this matters**: The HIPAA exposure occurs the moment PHI reaches the AI model —
+> not when it appears in output. These rules prevent PHI from ever entering the model's
+> context window.
+
+**Rule I-1 — Never read quarantined files.**
+If `_manifest.md` marks a file as `🚨 QUARANTINED`, do NOT open, read, or reference
+its content. The content has been deleted by the PHI scanner. Include this note:
+> "⚠️ Attachment `{filename}` was quarantined — PHI detected ({types}). Human review required."
+
+**Rule I-2 — Never read blocked files.**
+If `_manifest.md` marks a file as `🚫 BLOCKED` (phi_risk type or phi-risk filename),
+do NOT attempt to download, read, or access it by any means. Include this note:
+> "⚠️ Attachment `{filename}` was blocked (high PHI-risk). Review directly in Jira."
+
+**Rule I-3 — Never bypass fetch.py.**
+ALL attachment downloads MUST go through `scripts/attachment_reader/fetch.py`.
+Do NOT use curl, wget, direct Jira REST API calls, or any other method to download
+attachment content. The PHI pipeline only runs through fetch.py.
+
+**Rule I-4 — Apply first-10-lines check on all text files.**
+Even for files marked ✅ Clean, read the first 10 lines before proceeding. If you
+observe SSNs (###-##-####), MRNs, DOBs, patient/member names or IDs, or insurance
+policy numbers — STOP reading immediately and flag the file for manual review.
+
+**Rule I-5 — Image PHI discipline.**
+You MAY view images and screenshots. However, do NOT describe, transcribe, or quote
+any patient-identifiable information visible in the image (names, MRNs, DOBs, account
+numbers in UI fields). If PHI is visible, note:
+> "Screenshot contains potentially identifiable information — redacted per HIPAA policy."
+
+**Rule I-6 — PDF extracted text handling.**
+Treat `*_extracted.txt` files (PDF text extractions) the same as text files.
+Apply Rule I-4 (first-10-lines check) before reading in full.
+
+**Rule I-7 — Ticket description and comments.**
+The Jira ticket description and comment fields may also contain PHI. Do NOT include
+raw description or comment text in any output. Summarize or paraphrase only.
+If the description contains obvious PHI patterns (SSN, MRN, DOB), flag the ticket
+for manual review and do not process it further.
+
+**Rule I-8 — Always report PHI findings.**
+When attachments are processed, always include a PHI Protection Summary in your output:
+```
+## Attachment PHI Protection Summary
+- Total attachments: N
+- Readable by agent: N
+- Blocked (pre-download): N  [filenames]
+- Quarantined (PHI scan): N  [filenames + PHI types]
+- Action required: [files needing human review, or "None"]
+```
+
+---
 
 ## No Hallucination Policy
 - Every fact must come from a verifiable source (Jira ticket, Confluence page, Slack thread).
