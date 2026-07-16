@@ -1,0 +1,61 @@
+{
+  "ticket": {
+    "key": "PRODOPS-4567",
+    "summary": "Airbyte sync stuck for BCBSMA — CDC connector fails at 14:23 UTC",
+    "reporter": "J. Doe",
+    "created": "2026-07-07",
+    "service": "Airbyte",
+    "client": "BCBSMA",
+    "priority": "P1",
+    "priority_label": "High · 1h response / 8h resolve",
+    "status": "In Progress"
+  },
+  "symptom": {
+    "description": "Scheduled Airflow DAG <b>sync-bcbsma</b> failed on its 14:23 UTC run. The Airbyte connector for BCBSMA source raised a ConnectionResetError during CDC extraction and did not retry successfully. Data has not been landed to Snowflake since 12:00 UTC.",
+    "error_quote": "ERROR airbyte.workers.temporal — ConnectionResetError:\n[Errno 104] Connection reset by peer\n  at BCBSMA Postgres CDC · offset LSN 0/1A2B3C4D",
+    "evidence": [
+      "📎 airflow_error.log",
+      "📷 dag_screenshot.png",
+      "📊 Datadog: Airbyte / BCBSMA"
+    ]
+  },
+  "root_cause": {
+    "description": "The saved CDC offset on the BCBSMA connector references a WAL position that the source Postgres has already recycled. Airbyte cannot resume from that LSN, so every replication attempt fails with a connection reset when the WAL segment is requested and immediately closed by Postgres.",
+    "reference": {
+      "badge": "PRODOPS-3210",
+      "title": "Same connector, same root cause · resolved 2026-03-15"
+    }
+  },
+  "steps": {
+    "subtitle": "From Confluence runbook: Resolving CDC Offset Error",
+    "items": [
+      {
+        "title": "Open the Airbyte UI and locate the BCBSMA connection",
+        "detail": "Airbyte → Connections → <code>BCBSMA → Snowflake CURATED</code>. Confirm status shows <b>Failed</b> with the most recent run at 14:23 UTC."
+      },
+      {
+        "title": "Reset the saved CDC offset",
+        "detail": "Click <code>Clear data</code> on the connection. This drops the stored LSN so the next sync starts a fresh snapshot from the source."
+      },
+      {
+        "title": "Trigger a manual sync and confirm the run starts cleanly",
+        "detail": "Click <code>Sync now</code>. First run will do a full snapshot (~35 min for BCBSMA); subsequent runs will resume incremental CDC."
+      },
+      {
+        "title": "Notify BCBSMA data-ops that a re-snapshot is in progress",
+        "detail": "Post in <code>#client-bcbsma-notifications</code> with expected recovery window. Any downstream Snowflake tables will be stale until the first sync completes."
+      }
+    ]
+  },
+  "verify": [
+    "First sync completes green — Airflow DAG <code>sync-bcbsma</code> shows <b>success</b> in the next scheduled run.",
+    "Monitor two full sync cycles (~1h) on the <b>Datadog · Airbyte / BCBSMA</b> dashboard with no ConnectionResetError.",
+    "Row counts in <code>PROD_CURATED.BCBSMA.*</code> match source-side counts within tolerance (± 0.5%).",
+    "Confirm no PHI/PII was exposed in any log line during the incident (grep-scan attached log for MRN/SSN patterns)."
+  ],
+  "source": {
+    "badge": "Confluence · NGEN space",
+    "title": "Resolving CDC Offset Error",
+    "subtitle": "page 5344165905 · last updated 2026-05-04"
+  }
+}

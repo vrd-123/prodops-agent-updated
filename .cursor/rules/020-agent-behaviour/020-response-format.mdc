@@ -115,7 +115,38 @@ satisfy the **Content Requirements** defined in
 
 ### Diagram source-of-truth
 
-The **only** valid diagram templates are the 6 templates in
-`templates/DIAGRAM_TEMPLATES.md` (mirror: `.cursor/templates/DIAGRAM_TEMPLATES.md`).
-Do not invent new template structures. Pick the closest matching template
-from §4, copy its skeleton, and fill it with data from the target ticket.
+Two diagram pipelines exist. Pick the right one per response.
+
+**Pipeline A — HTML infographic (default, preferred).**
+Use `scripts/diagram_render/` (Playwright + Jinja2 HTML → PNG) when the
+response benefits from a polished summary card (branded typography,
+colored status pills, code blocks, verification checklist). This is the
+default for ticket-resolution replies, triage summaries, and any output
+where visual polish matters. Templates live in
+`scripts/diagram_render/templates/*.html.j2`. Available layouts:
+
+- `resolution_flow` — Symptom → Root Cause → Steps → Verify card.
+  (Add new layouts here — do not fork or hand-roll HTML.)
+
+Invocation:
+
+```
+python -m scripts.diagram_render.render \\
+    --template <name> --data <ticket.json> --out reports/<key>.png
+```
+
+**Pipeline B — Mermaid diagram.**
+Use when the response genuinely needs a boxes-and-arrows flow: service
+architecture, communication sequence, state lifecycle, ticket
+relationship graph. The **only** valid Mermaid templates are the 6 in
+`templates/DIAGRAM_TEMPLATES.md` (mirror:
+`.cursor/templates/DIAGRAM_TEMPLATES.md`). Do not invent new Mermaid
+template structures — pick the closest matching template, copy its
+skeleton, fill it with data from the target ticket, and run it through
+the same **Diagram Quality Rule** hard gate above.
+
+**When both would fit → prefer Pipeline A.** Slack readers understand
+polished cards faster than dense Mermaid graphs.
+
+Neither pipeline may be used to render PHI/PII. The Content
+Requirements checklist applies to both.

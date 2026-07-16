@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ ticket.key }} — Resolution Flow</title>
+<style>
+  :root {
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #0F1B2E;
+    --ink-soft: #4C5A72;
+    --ink-mute: #7A8699;
+    --border: #E4E9F2;
+    --shadow: 0 2px 4px rgba(15,27,46,.04), 0 8px 24px rgba(15,27,46,.06);
+
+    --sev-red: #DC2626;      --sev-red-bg: #FEE2E2;
+    --sev-pink: #DB2777;     --sev-pink-bg: #FCE7F3;
+    --sev-green: #16A34A;    --sev-green-bg: #DCFCE7;
+    --sev-lime: #65A30D;     --sev-lime-bg: #ECFCCB;
+    --sev-blue: #2563EB;     --sev-blue-bg: #DBEAFE;
+    --sev-amber: #D97706;    --sev-amber-bg: #FEF3C7;
+    --sev-slate: #475569;    --sev-slate-bg: #E2E8F0;
+    --sev-purple: #7C3AED;   --sev-purple-bg: #EDE9FE;
+    --sev-teal: #0D9488;     --sev-teal-bg: #CCFBF1;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  .page { width: 1200px; padding: 48px; }
+
+  /* ---------- Header ---------- */
+  .header {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 32px; box-shadow: var(--shadow); margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .header-left { display: flex; gap: 20px; align-items: center; }
+  .header-icon {
+    width: 64px; height: 64px; border-radius: 14px;
+    background: linear-gradient(135deg, #1D4ED8 0%, #4F46E5 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 32px; flex-shrink: 0;
+  }
+  .header-text { display: flex; flex-direction: column; gap: 6px; }
+  .ticket-key {
+    font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #4F46E5;
+  }
+  .ticket-summary { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1.25; max-width: 780px; }
+  .ticket-meta { display: flex; gap: 20px; font-size: 13px; color: var(--ink-mute); margin-top: 4px; }
+  .ticket-meta span b { color: var(--ink-soft); font-weight: 600; }
+
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+  }
+  .pill.priority-p0 { background: var(--sev-red-bg); color: var(--sev-red); }
+  .pill.priority-p1 { background: var(--sev-amber-bg); color: var(--sev-amber); }
+  .pill.priority-p2 { background: var(--sev-blue-bg); color: var(--sev-blue); }
+  .pill.priority-p3 { background: var(--sev-slate-bg); color: var(--sev-slate); }
+  .pill.status { background: var(--sev-purple-bg); color: var(--sev-purple); }
+
+  /* ---------- Section cards ---------- */
+  .section {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 28px; box-shadow: var(--shadow); margin-bottom: 20px;
+    position: relative; overflow: hidden;
+  }
+  .section::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+  }
+  .section.symptom::before   { background: var(--sev-red); }
+  .section.root-cause::before{ background: var(--sev-pink); }
+  .section.steps::before     { background: var(--sev-green); }
+  .section.verify::before    { background: var(--sev-lime); }
+  .section.source::before    { background: var(--sev-slate); }
+
+  .section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .section-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .section.symptom    .section-icon { background: var(--sev-red-bg);   color: var(--sev-red); }
+  .section.root-cause .section-icon { background: var(--sev-pink-bg);  color: var(--sev-pink); }
+  .section.steps      .section-icon { background: var(--sev-green-bg); color: var(--sev-green); }
+  .section.verify     .section-icon { background: var(--sev-lime-bg);  color: var(--sev-lime); }
+  .section.source     .section-icon { background: var(--sev-slate-bg); color: var(--sev-slate); }
+
+  .section-title { font-size: 18px; font-weight: 700; color: var(--ink); }
+  .section-sub   { font-size: 13px; color: var(--ink-mute); margin-top: 2px; }
+
+  .body-text { font-size: 15px; color: var(--ink-soft); line-height: 1.55; }
+  .body-text b { color: var(--ink); font-weight: 600; }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: #F1F3F8; color: #1E293B;
+    padding: 2px 6px; border-radius: 6px;
+    border: 1px solid #E2E8F0;
+  }
+  .code-block {
+    display: block; padding: 12px 14px; margin: 10px 0 0;
+    background: #0F172A; color: #E2E8F0;
+    border-radius: 10px; border: none;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-size: 13px; line-height: 1.5; white-space: pre-wrap;
+  }
+
+  .evidence-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .evidence-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #F1F5F9; color: var(--ink-soft);
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 500; border: 1px solid var(--border);
+  }
+  .evidence-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sev-red); }
+
+  /* ---------- Steps ---------- */
+  .steps-list { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+  .step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 14px 16px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 12px;
+  }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--sev-green); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .step-detail { font-size: 13px; color: var(--ink-mute); }
+
+  /* ---------- Verify checklist ---------- */
+  .verify-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .verify-item {
+    display: flex; gap: 12px; align-items: center;
+    padding: 10px 14px; background: #F6FBF3; border: 1px solid #DCFCE7; border-radius: 10px;
+  }
+  .verify-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--sev-lime); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .verify-text { font-size: 14px; color: var(--ink-soft); }
+  .verify-text b { color: var(--ink); }
+
+  /* ---------- Source ---------- */
+  .source-link { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .source-badge {
+    background: #EEF2FF; color: #4F46E5;
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 6px;
+    border: 1px solid #E0E7FF;
+  }
+  .source-title { font-size: 14px; color: var(--ink-soft); }
+  .source-title b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; margin-top: 4px;
+    font-size: 12px; color: var(--ink-mute);
+  }
+  .footer .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink-soft); }
+  .footer .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: #4F46E5; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">🎫</div>
+      <div class="header-text">
+        <div class="ticket-key">{{ ticket.key }}</div>
+        <div class="ticket-summary">{{ ticket.summary }}</div>
+        <div class="ticket-meta">
+          {% if ticket.reporter %}<span>👤 <b>{{ ticket.reporter }}</b></span>{% endif %}
+          {% if ticket.created %}<span>📅 <b>{{ ticket.created }}</b></span>{% endif %}
+          {% if ticket.service %}<span>⚙️ <b>{{ ticket.service }}</b></span>{% endif %}
+          {% if ticket.client %}<span>🏥 <b>{{ ticket.client }}</b></span>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      {% if ticket.priority %}<span class="pill priority-{{ ticket.priority|lower }}">🔥 {{ ticket.priority }} · {{ ticket.priority_label or '' }}</span>{% endif %}
+      {% if ticket.status %}<span class="pill status">● {{ ticket.status }}</span>{% endif %}
+    </div>
+  </div>
+
+  {% if symptom %}
+  <div class="section symptom">
+    <div class="section-head">
+      <div class="section-icon">🚨</div>
+      <div>
+        <div class="section-title">Symptom</div>
+        <div class="section-sub">Observed failure — from ticket &amp; attachments</div>
+      </div>
+    </div>
+    <div class="body-text">{{ symptom.description|safe }}</div>
+    {% if symptom.error_quote %}<div class="code-block">{{ symptom.error_quote }}</div>{% endif %}
+    {% if symptom.evidence %}
+    <div class="evidence-row">
+      {% for e in symptom.evidence %}
+        <span class="evidence-chip"><span class="dot"></span>{{ e }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if root_cause %}
+  <div class="section root-cause">
+    <div class="section-head">
+      <div class="section-icon">🎯</div>
+      <div>
+        <div class="section-title">Root Cause</div>
+        <div class="section-sub">Underlying reason — traced from evidence &amp; past tickets</div>
+      </div>
+    </div>
+    <div class="body-text">{{ root_cause.description|safe }}</div>
+    {% if root_cause.reference %}
+    <div class="source-link">
+      <span class="source-badge">{{ root_cause.reference.badge }}</span>
+      <span class="source-title">{{ root_cause.reference.title }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if steps %}
+  <div class="section steps">
+    <div class="section-head">
+      <div class="section-icon">🛠️</div>
+      <div>
+        <div class="section-title">Resolution Steps</div>
+        <div class="section-sub">{{ steps.subtitle or 'Concrete actions the assignee should take' }}</div>
+      </div>
+    </div>
+    <div class="steps-list">
+      {% for step in steps['items'] %}
+      <div class="step">
+        <div class="step-num">{{ loop.index }}</div>
+        <div class="step-body">
+          <div class="step-title">{{ step.title }}</div>
+          {% if step.detail %}<div class="step-detail">{{ step.detail|safe }}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if verify %}
+  <div class="section verify">
+    <div class="section-head">
+      <div class="section-icon">✅</div>
+      <div>
+        <div class="section-title">Verification</div>
+        <div class="section-sub">How to confirm the fix worked</div>
+      </div>
+    </div>
+    <div class="verify-list">
+      {% for v in verify %}
+      <div class="verify-item">
+        <div class="verify-check">✓</div>
+        <div class="verify-text">{{ v|safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if source %}
+  <div class="section source">
+    <div class="section-head">
+      <div class="section-icon">📖</div>
+      <div>
+        <div class="section-title">Source of Truth</div>
+        <div class="section-sub">Where these steps come from</div>
+      </div>
+    </div>
+    <div class="source-link">
+      <span class="source-badge">{{ source.badge }}</span>
+      <span class="source-title"><b>{{ source.title }}</b>{% if source.subtitle %} — {{ source.subtitle }}{% endif %}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    <div class="brand"><span class="brand-dot"></span>ProdOps Bot · Abacus Insights</div>
+    <div>Generated {{ generated_at }}</div>
+  </div>
+
+</div>
+</body>
+</html>
