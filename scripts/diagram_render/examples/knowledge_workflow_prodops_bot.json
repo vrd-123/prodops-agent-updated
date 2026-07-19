@@ -1,0 +1,134 @@
+{
+  "title": "ProdOps Bot — End-to-End Workflow",
+  "subtitle": "Intent routing · ticket_op Steps 1–6 · knowledge_query K1–K4",
+  "tldr": "Every Slack message is classified first. <b>ticket_op</b> runs Intake → Validation → Triage → Solution → Judge → Reply for PRODOPS keys. <b>knowledge_query</b> runs FAQ seed → multi-source search → Judge → Answer. Subagents advise; only the main orchestrator posts to Slack.",
+  "lanes": [
+    {
+      "id": "router",
+      "tag": "Entry",
+      "title": "Step 0 — Classify incoming Slack message",
+      "nodes": [
+        {
+          "style": "router",
+          "label": "Read thread",
+          "detail": "Slack MCP thread read"
+        },
+        {
+          "style": "router",
+          "label": "Detect intent",
+          "detail": "casual · ticket_op · knowledge_query"
+        },
+        {
+          "style": "router",
+          "label": "Route",
+          "detail": "PRODOPS-\\d+ → ticket_op"
+        }
+      ]
+    },
+    {
+      "id": "ticket",
+      "tag": "ticket_op",
+      "title": "Steps 1–6 — Ticket validation, triage & resolution",
+      "nodes": [
+        {
+          "style": "intake",
+          "num": "Step 1",
+          "label": "Ticket Intake",
+          "detail": "Jira fetch · config match · attachments"
+        },
+        {
+          "style": "subagent",
+          "num": "Step 2",
+          "label": "Validation",
+          "detail": "validator-agent · 9 SoP fields"
+        },
+        {
+          "style": "subagent",
+          "num": "Step 3",
+          "label": "Triage",
+          "detail": "triage-agent · classify & route"
+        },
+        {
+          "style": "subagent",
+          "num": "Step 4",
+          "label": "Solution Search",
+          "detail": "solution-agent · Jira/Confluence/Slack"
+        },
+        {
+          "style": "subagent",
+          "num": "Step 5",
+          "label": "Judge",
+          "detail": "score ≥ 6.0 · max 2 retries"
+        },
+        {
+          "style": "output",
+          "num": "Step 6",
+          "label": "Slack Reply",
+          "detail": "Validation · Triage · Related issues"
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "tag": "knowledge_query",
+      "title": "Steps K1–K4 — Sourced knowledge answers",
+      "nodes": [
+        {
+          "style": "kstep",
+          "num": "K1",
+          "label": "Query Intake",
+          "detail": "FAQ seed · service match"
+        },
+        {
+          "style": "kstep",
+          "num": "K2",
+          "label": "Knowledge Search",
+          "detail": "Confluence → Jira → Slack"
+        },
+        {
+          "style": "kstep",
+          "num": "K3",
+          "label": "Judge",
+          "detail": "corroboration · per-claim sources"
+        },
+        {
+          "style": "output",
+          "num": "K4",
+          "label": "Answer",
+          "detail": "TL;DR · sources · confidence"
+        }
+      ]
+    }
+  ],
+  "confidence": {
+    "level": "high",
+    "label": "High confidence",
+    "detail": "Verified against 3 independent repo sources: prodops-workflow-gate SKILL, README architecture, agent.md consultation hooks."
+  },
+  "legend": [
+    { "color": "#EDE9FE", "label": "Router / intake" },
+    { "color": "#FEF3C7", "label": "Subagent consult" },
+    { "color": "#DCFCE7", "label": "Slack output" },
+    { "color": "#CCFBF1", "label": "Knowledge path" }
+  ],
+  "for_you": [
+    "Share a <code>PRODOPS-XXXX</code> key to trigger the full ticket_op pipeline.",
+    "Ask a platform question (no ticket key) for the knowledge_query path.",
+    "Use <code>/validate</code>, <code>/triage</code>, or <code>/solution</code> to scope the visible section — all steps still run internally."
+  ],
+  "sources": [
+    {
+      "kind": "Repo — Skills",
+      "refs": [
+        "<code>.cursor/skills/prodops-workflow-gate/SKILL.md</code> — master Steps 0–6 gate"
+      ]
+    },
+    {
+      "kind": "Repo — Agent",
+      "refs": [
+        "<code>.cursor/agents/agent.md</code> — orchestrator + subagent consultation hooks",
+        "<code>README.md</code> — architecture diagram (Steps 1–6)"
+      ]
+    }
+  ]
+}

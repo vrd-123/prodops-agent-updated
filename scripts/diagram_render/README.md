@@ -44,6 +44,7 @@ Each template is a Jinja2 file under `templates/`. The JSON schema is
 | Template            | File                                     | Purpose |
 |---------------------|------------------------------------------|---------|
 | `resolution_flow`   | `templates/resolution_flow.html.j2`      | Symptom → Root Cause → Steps → Verify card for ticket-resolution replies |
+| `knowledge_workflow`| `templates/knowledge_workflow.html.j2`   | Bot workflow / architecture lanes for knowledge_query diagram answers |
 
 More layouts (timeline, comparison, service-map, triage-summary) can be
 added by dropping new `<name>.html.j2` files here.
