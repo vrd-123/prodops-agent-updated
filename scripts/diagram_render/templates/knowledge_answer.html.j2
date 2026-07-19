@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ topic }} — ProdOps Knowledge</title>
+<style>
+  :root {
+    --bg: #F5F7FB; --card: #FFFFFF; --ink: #0F1B2E; --ink-soft: #4C5A72;
+    --ink-mute: #7A8699; --border: #E4E9F2;
+    --shadow: 0 2px 4px rgba(15,27,46,.04), 0 8px 24px rgba(15,27,46,.06);
+    --blue: #2563EB; --blue-bg: #DBEAFE; --green: #16A34A; --green-bg: #DCFCE7;
+    --amber: #D97706; --amber-bg: #FEF3C7; --purple: #7C3AED; --purple-bg: #EDE9FE;
+    --slate: #475569; --slate-bg: #E2E8F0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .page { width: 1200px; padding: 48px; }
+  .header { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 32px;
+    box-shadow: var(--shadow); margin-bottom: 20px; display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  .topic-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--purple); }
+  .topic-title { font-size: 26px; font-weight: 700; margin: 6px 0 10px; line-height: 1.25; }
+  .tldr { font-size: 15px; color: var(--ink-soft); line-height: 1.5; max-width: 820px; }
+  .pill { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.conf-high { background: var(--green-bg); color: var(--green); }
+  .pill.conf-med { background: var(--amber-bg); color: var(--amber); }
+  .pill.conf-low { background: var(--slate-bg); color: var(--slate); }
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px 26px;
+    box-shadow: var(--shadow); margin-bottom: 16px; position: relative; overflow: hidden; }
+  .section::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--blue); }
+  .section.stages::before { background: var(--purple); }
+  .section.sources::before { background: var(--slate); }
+  .section.for-you::before { background: var(--green); }
+  .section-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .section-icon { font-size: 22px; }
+  .section-title { font-size: 16px; font-weight: 700; }
+  .section-sub { font-size: 12px; color: var(--ink-mute); margin-top: 2px; }
+  .fact-list, .stage-list, .source-list, .for-you-list { display: flex; flex-direction: column; gap: 10px; }
+  .fact, .stage, .source-row, .for-you-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px;
+    background: #F8FAFC; border-radius: 10px; border: 1px solid var(--border); }
+  .stage-num { width: 28px; height: 28px; border-radius: 8px; background: var(--purple-bg); color: var(--purple);
+    font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 3px 8px; border-radius: 6px; background: var(--blue-bg); color: var(--blue); white-space: nowrap; flex-shrink: 0; }
+  .badge.confluence { background: #E0F2FE; color: #0369A1; }
+  .badge.slack { background: #F3E8FF; color: #7E22CE; }
+  .badge.repo { background: #ECFDF5; color: #047857; }
+  .body { font-size: 13px; line-height: 1.45; color: var(--ink-soft); flex: 1; }
+  .body b { color: var(--ink); }
+  .flow-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .flow-box { background: #F1F5F9; border: 1px dashed var(--border); border-radius: 10px; padding: 10px; font-size: 11px; text-align: center; color: var(--ink-soft); }
+  .flow-arrow { text-align: center; color: var(--purple); font-size: 18px; grid-column: span 3; margin: -4px 0; }
+  .conflict { background: var(--amber-bg); border: 1px solid #FCD34D; border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; color: #92400E; margin-top: 10px; }
+  .footer { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--ink-mute); }
+  .brand { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="topic-label">ProdOps Knowledge</div>
+      <div class="topic-title">{{ topic }}</div>
+      <div class="tldr">{{ tldr|safe }}</div>
+    </div>
+    {% if confidence %}
+    <span class="pill conf-{{ confidence.level }}">{{ confidence.label }}</span>
+    {% endif %}
+  </div>
+
+  {% if key_facts %}
+  <div class="section">
+    <div class="section-head">
+      <div class="section-icon">📋</div>
+      <div><div class="section-title">Key Facts</div><div class="section-sub">Verified from first-hand sources</div></div>
+    </div>
+    <div class="fact-list">
+      {% for f in key_facts %}
+      <div class="fact">
+        <span class="badge {{ f.source_type }}">{{ f.source_badge }}</span>
+        <div class="body">{{ f.text|safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if stages %}
+  <div class="section stages">
+    <div class="section-head">
+      <div class="section-icon">🚀</div>
+      <div><div class="section-title">{{ stages.title or 'Workflow Stages' }}</div>
+        {% if stages.subtitle %}<div class="section-sub">{{ stages.subtitle }}</div>{% endif %}</div>
+    </div>
+    <div class="stage-list">
+      {% for s in stages['items'] %}
+      <div class="stage">
+        <div class="stage-num">{{ loop.index }}</div>
+        <div style="flex:1">
+          <div class="body"><b>{{ s.title }}</b>{% if s.detail %} — {{ s.detail|safe }}{% endif %}</div>
+          {% if s.source_badge %}<span class="badge {{ s.source_type or 'confluence' }}" style="margin-top:6px;display:inline-block">{{ s.source_badge }}</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if stages.flow_labels %}
+    <div class="flow-row" style="margin-top:14px">
+      {% for label in stages.flow_labels %}
+      <div class="flow-box">{{ label }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if sources %}
+  <div class="section sources">
+    <div class="section-head">
+      <div class="section-icon">📚</div>
+      <div><div class="section-title">Sources</div></div>
+    </div>
+    <div class="source-list">
+      {% for s in sources %}
+      <div class="source-row">
+        <span class="badge {{ s.type }}">{{ s.type|upper }}</span>
+        <div class="body"><b>{{ s.title }}</b>{% if s.get('date') %} · {{ s.date }}{% endif %}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if conflict %}
+    <div class="conflict">⚠️ {{ conflict }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if for_you %}
+  <div class="section for-you">
+    <div class="section-head">
+      <div class="section-icon">✅</div>
+      <div><div class="section-title">For You</div></div>
+    </div>
+    <div class="for-you-list">
+      {% for item in for_you %}
+      <div class="for-you-item"><div class="body">{{ item|safe }}</div></div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    <div class="brand"><span class="brand-dot"></span>ProdOps Bot · Abacus Insights</div>
+    <div>Generated {{ generated_at }}</div>
+  </div>
+</div>
+</body>
+</html>
