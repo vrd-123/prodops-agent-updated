@@ -41,12 +41,13 @@ render(template="resolution_flow", data=payload, out_path="out.png")
 Each template is a Jinja2 file under `templates/`. The JSON schema is
 "schema-by-example" — see the matching example in `examples/`.
 
-| Template            | File                                     | Purpose |
-|---------------------|------------------------------------------|---------|
-| `resolution_flow`   | `templates/resolution_flow.html.j2`      | Symptom → Root Cause → Steps → Verify card for ticket-resolution replies |
+| Template              | File                                       | Purpose |
+|-----------------------|--------------------------------------------|---------|
+| `resolution_flow`     | `templates/resolution_flow.html.j2`        | Symptom → Root Cause → Steps → Verify card for ticket-resolution replies |
+| `knowledge_workflow`  | `templates/knowledge_workflow.html.j2`    | Lane-based workflow diagram for knowledge_query answers (architecture, pipelines, bot workflows) |
 
-More layouts (timeline, comparison, service-map, triage-summary) can be
-added by dropping new `<name>.html.j2` files here.
+More layouts (timeline, comparison, service-map, triage-summary,
+`knowledge_answer`) can be added by dropping new `<name>.html.j2` files here.
 
 ## Template contract
 
