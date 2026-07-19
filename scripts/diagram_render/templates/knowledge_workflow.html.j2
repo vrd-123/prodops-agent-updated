@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>{{ title or 'ProdOps Knowledge Workflow' }}</title>
+<style>
+  :root {
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #0F1B2E;
+    --ink-soft: #4C5A72;
+    --ink-mute: #7A8699;
+    --border: #E4E9F2;
+    --shadow: 0 2px 4px rgba(15,27,46,.04), 0 8px 24px rgba(15,27,46,.06);
+
+    --lane-blue: #2563EB;   --lane-blue-bg: #DBEAFE;
+    --lane-purple: #7C3AED; --lane-purple-bg: #EDE9FE;
+    --lane-green: #16A34A;  --lane-green-bg: #DCFCE7;
+    --lane-amber: #D97706;  --lane-amber-bg: #FEF3C7;
+    --lane-teal: #0D9488;   --lane-teal-bg: #CCFBF1;
+    --lane-slate: #475569;  --lane-slate-bg: #E2E8F0;
+    --lane-pink: #DB2777;   --lane-pink-bg: #FCE7F3;
+
+    --conf-high: #16A34A;   --conf-high-bg: #DCFCE7;
+    --conf-med: #D97706;    --conf-med-bg: #FEF3C7;
+    --conf-low: #DC2626;    --conf-low-bg: #FEE2E2;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  .page { width: 1200px; padding: 40px; display: flex; flex-direction: column; gap: 20px; }
+
+  .header {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 28px; box-shadow: var(--shadow);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+  }
+  .header-left { display: flex; gap: 16px; align-items: flex-start; flex: 1; }
+  .header-icon {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: linear-gradient(135deg, #1D4ED8 0%, #4F46E5 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 28px; flex-shrink: 0;
+  }
+  .header-title { font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .tldr {
+    font-size: 15px; color: var(--ink-soft); line-height: 1.55;
+    padding: 12px 14px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px;
+  }
+  .tldr-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #4F46E5; margin-bottom: 6px; }
+
+  .confidence-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+  }
+  .confidence-pill.high { background: var(--conf-high-bg); color: var(--conf-high); }
+  .confidence-pill.medium { background: var(--conf-med-bg); color: var(--conf-med); }
+  .confidence-pill.low { background: var(--conf-low-bg); color: var(--conf-low); }
+
+  .main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+
+  .lanes { display: flex; flex-direction: column; gap: 16px; }
+
+  .lane {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .lane::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+  }
+  .lane.blue::before   { background: var(--lane-blue); }
+  .lane.purple::before { background: var(--lane-purple); }
+  .lane.green::before  { background: var(--lane-green); }
+  .lane.amber::before  { background: var(--lane-amber); }
+  .lane.teal::before   { background: var(--lane-teal); }
+  .lane.slate::before  { background: var(--lane-slate); }
+  .lane.pink::before   { background: var(--lane-pink); }
+
+  .lane-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .lane-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .lane-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 6px;
+  }
+  .lane.blue   .lane-tag { background: var(--lane-blue-bg);   color: var(--lane-blue); }
+  .lane.purple .lane-tag { background: var(--lane-purple-bg); color: var(--lane-purple); }
+  .lane.green  .lane-tag { background: var(--lane-green-bg);   color: var(--lane-green); }
+  .lane.amber  .lane-tag { background: var(--lane-amber-bg);   color: var(--lane-amber); }
+  .lane.teal   .lane-tag { background: var(--lane-teal-bg);    color: var(--lane-teal); }
+  .lane.slate  .lane-tag { background: var(--lane-slate-bg);   color: var(--lane-slate); }
+  .lane.pink   .lane-tag { background: var(--lane-pink-bg);    color: var(--lane-pink); }
+
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .node {
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; min-width: 140px; max-width: 220px; flex: 1 1 140px;
+  }
+  .node-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .node-detail { font-size: 11px; color: var(--ink-mute); line-height: 1.4; }
+  .arrow {
+    color: var(--ink-mute); font-size: 18px; font-weight: 700; flex-shrink: 0;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+    background: #EEF2FF; color: #4338CA; border: 1px solid #E0E7FF;
+  }
+  .chip.secret { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
+
+  .side-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .info-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .info-box-title { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .info-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .info-list li { font-size: 11px; color: var(--ink-soft); line-height: 1.4; padding-left: 14px; position: relative; }
+  .info-list li::before { content: "•"; position: absolute; left: 0; color: #4F46E5; font-weight: 700; }
+
+  .legend-grid { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-soft); }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  .section {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+  .source-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .source-kind {
+    font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px;
+    background: #EEF2FF; color: #4338CA; white-space: nowrap;
+  }
+  .source-text { font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+
+  .for-you-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .for-you-list li {
+    font-size: 12px; color: var(--ink-soft); line-height: 1.45;
+    padding: 8px 10px; background: #F6FBF3; border: 1px solid #DCFCE7; border-radius: 8px;
+  }
+
+  .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; font-size: 11px; color: var(--ink-mute);
+  }
+  .footer .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink-soft); }
+  .footer .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: #4F46E5; }
+
+  code {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 10px; background: #F1F3F8; color: #1E293B;
+    padding: 1px 4px; border-radius: 4px; border: 1px solid #E2E8F0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">🤖</div>
+      <div style="flex:1">
+        <div class="header-title">{{ title }}</div>
+        {% if tldr %}
+        <div class="tldr">
+          <div class="tldr-label">TL;DR</div>
+          {{ tldr|safe }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if confidence %}
+    <span class="confidence-pill {{ confidence.level|lower }}">
+      📊 {{ confidence.level }} — {{ confidence.detail }}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="main-grid">
+    <div class="lanes">
+      {% for lane in lanes %}
+      <div class="lane {{ lane.color or 'blue' }}">
+        <div class="lane-head">
+          <div class="lane-title">{{ lane.name }}</div>
+          {% if lane.tag %}<span class="lane-tag">{{ lane.tag }}</span>{% endif %}
+        </div>
+        <div class="flow">
+          {% for node in lane.nodes %}
+            {% if not loop.first %}<span class="arrow">→</span>{% endif %}
+            <div class="node">
+              <div class="node-title">{{ node.title }}</div>
+              {% if node.detail %}<div class="node-detail">{{ node.detail|safe }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        {% if lane.chips %}
+        <div class="chips">
+          {% for chip in lane.chips %}
+            <span class="chip{% if chip.secret is defined and chip.secret %} secret{% endif %}">{{ chip.label }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="side-col">
+      {% for box in info_boxes %}
+      <div class="info-box">
+        <div class="info-box-title">{{ box.title }}</div>
+        <ul class="info-list">
+          {% for item in box['items'] %}
+          <li>{{ item|safe }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+
+      {% if legend %}
+      <div class="info-box">
+        <div class="info-box-title">Legend</div>
+        <div class="legend-grid">
+          {% for item in legend %}
+          <div class="legend-item">
+            <span class="legend-swatch" style="background: {{ item.color }}"></span>
+            {{ item.label }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if sources %}
+  <div class="section">
+    <div class="section-title">📚 Sources</div>
+    {% for src in sources %}
+    <div class="source-row">
+      <span class="source-kind">{{ src.kind }}</span>
+      <span class="source-text"><b>{{ src.claim }}</b> — {{ src.ref }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if for_you %}
+  <div class="section">
+    <div class="section-title">✅ For you</div>
+    <ul class="for-you-list">
+      {% for item in for_you %}
+      <li>{{ item|safe }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    <div class="brand"><span class="brand-dot"></span>ProdOps Bot · Abacus Insights</div>
+    <div>Generated {{ generated_at }}</div>
+  </div>
+
+</div>
+</body>
+</html>

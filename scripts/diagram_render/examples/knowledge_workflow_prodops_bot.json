@@ -1,0 +1,172 @@
+{
+  "title": "ProdOps Bot — End-to-End Workflow",
+  "tldr": "Every Slack request is classified (<code>ticket_op</code>, <code>knowledge_query</code>, or casual), then routed through mandatory gated steps with read-only subagents before a single sourced Slack reply.",
+  "confidence": {
+    "level": "High",
+    "detail": "2 repo sources corroborate"
+  },
+  "lanes": [
+    {
+      "name": "1 · Slack Trigger & Intent Router",
+      "tag": "entry",
+      "color": "blue",
+      "nodes": [
+        {
+          "title": "Read thread",
+          "detail": "Slack MCP · channel + thread_ts"
+        },
+        {
+          "title": "Classify intent",
+          "detail": "PRODOPS key → ticket_op; question → knowledge_query"
+        },
+        {
+          "title": "Check sources",
+          "detail": "Jira · Confluence · Slack MCP availability"
+        }
+      ],
+      "chips": [
+        { "label": "Slack MCP" },
+        { "label": "prodops-workflow-gate" }
+      ]
+    },
+    {
+      "name": "2 · ticket_op Pipeline (Steps 1–6)",
+      "tag": "ticket_op",
+      "color": "purple",
+      "nodes": [
+        {
+          "title": "1 Intake",
+          "detail": "Fetch Jira · match config/ticket-rules · attachments"
+        },
+        {
+          "title": "2 Validate",
+          "detail": "validator-agent · 9-field SoP checklist"
+        },
+        {
+          "title": "3 Triage",
+          "detail": "triage-agent · classify · route · assignee"
+        },
+        {
+          "title": "4 Solution",
+          "detail": "solution-agent · Jira · Confluence · Slack"
+        },
+        {
+          "title": "5 Judge",
+          "detail": "judge-agent · score ≥ 6.0 to pass"
+        },
+        {
+          "title": "6 Reply",
+          "detail": "Orchestrator posts threaded Slack analysis"
+        }
+      ],
+      "chips": [
+        { "label": "fetch.py attachments" },
+        { "label": "validation-checklist.yaml" },
+        { "label": "triage-routing.yaml" }
+      ]
+    },
+    {
+      "name": "3 · knowledge_query Pipeline (K1–K4)",
+      "tag": "knowledge",
+      "color": "teal",
+      "nodes": [
+        {
+          "title": "K1 Intake",
+          "detail": "Parse question · knowledge-faq.yaml seed"
+        },
+        {
+          "title": "K2 Search",
+          "detail": "Confluence → Jira → Slack · corroborate facts"
+        },
+        {
+          "title": "K3 Judge",
+          "detail": "Per-claim sourcing · PHI safety gate"
+        },
+        {
+          "title": "K4 Answer",
+          "detail": "TL;DR + sources + confidence + For you"
+        }
+      ],
+      "chips": [
+        { "label": "knowledge-expansion skill" },
+        { "label": "knowledge-faq.yaml" }
+      ]
+    },
+    {
+      "name": "4 · Guardrails (always on)",
+      "tag": "safety",
+      "color": "amber",
+      "nodes": [
+        {
+          "title": "No hallucination",
+          "detail": "Every claim needs Jira · Confluence · Slack · repo cite"
+        },
+        {
+          "title": "PHI/PII block",
+          "detail": "_manifest.md · quarantine · first-10-lines check"
+        },
+        {
+          "title": "Rate limits",
+          "detail": "Jira 5 · Confluence 3 · Slack 3 per turn"
+        },
+        {
+          "title": "Read-only",
+          "detail": "Subagents advise · orchestrator posts only"
+        }
+      ],
+      "chips": [
+        { "label": "000-guardrails.mdc", "secret": false },
+        { "label": "KMS secrets at runtime", "secret": true }
+      ]
+    }
+  ],
+  "info_boxes": [
+    {
+      "title": "Subagents (advisory only)",
+      "items": [
+        "<code>validator-agent</code> — Step 2 validation",
+        "<code>triage-agent</code> — Step 3 classification & routing",
+        "<code>solution-agent</code> — Step 4 past issues & runbooks",
+        "<code>judge-agent</code> — Step 5 quality gate (≥ 6.0 PASS)"
+      ]
+    },
+    {
+      "title": "Source priority",
+      "items": [
+        "1 Jira ticket fields (ground truth for tickets)",
+        "2 config/ticket-rules/*.yaml playbooks",
+        "3 Confluence runbooks",
+        "4 Past PRODOPS tickets · Slack threads",
+        "5 config/knowledge_expansion.yaml fallback"
+      ]
+    }
+  ],
+  "legend": [
+    { "color": "#2563EB", "label": "Entry & intent routing" },
+    { "color": "#7C3AED", "label": "ticket_op mandatory steps" },
+    { "color": "#0D9488", "label": "knowledge_query path" },
+    { "color": "#D97706", "label": "Guardrails & compliance" }
+  ],
+  "sources": [
+    {
+      "kind": "Repo",
+      "claim": "Master workflow Steps 0–6 with subagent hooks",
+      "ref": ".cursor/skills/prodops-workflow-gate/SKILL.md"
+    },
+    {
+      "kind": "Repo",
+      "claim": "Orchestrator role, consultation hooks, response format",
+      "ref": ".cursor/agents/agent.md"
+    },
+    {
+      "kind": "Repo",
+      "claim": "Intent classes ticket_op / knowledge_query and Slack templates",
+      "ref": "Final Agent Instructions §4–§10 (prodops-agent-updated)"
+    }
+  ],
+  "for_you": [
+    "Drop a <code>PRODOPS-XXXX</code> key in Slack to trigger the full ticket_op pipeline (validate → triage → solution → judge).",
+    "Ask a general platform question (no ticket key) to route through knowledge_query — the bot searches Confluence, Jira, and Slack before answering.",
+    "Self-check: open <code>.cursor/skills/prodops-workflow-gate/SKILL.md</code> in the repo for the authoritative step order — no step is skipped."
+  ]
+}
