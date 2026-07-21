@@ -15,10 +15,20 @@ When the solution-agent or main agent needs deeper context than what the ticket-
 
 ## Protocol
 
+> **Exhaust the ladder — do not stop at the first hit.** For a `knowledge_query`
+> the goal is corroboration, not a single answer. Continue down Confluence → Jira
+> → Slack (within rate limits) until you have **≥ 2 independent first-hand sources**
+> or you have exhausted the ladder. One source ⇒ confidence caps at Medium
+> (see `000-guardrails.mdc` Confidence Calibration). This is the exact gap that
+> makes a single-Confluence-page answer weaker than a corroborated one.
+
 ### Step 1 — Assess what's available
 - Check if `matched_service.knowledge_links` has been loaded.
 - Check if those links were already read in this turn.
-- If knowledge_links are sufficient → skip expansion.
+- A single loaded link is a STARTING point, not "sufficient" — still seek a second
+  independent source before finalizing (unless rate limits are hit).
+- For recurring questions, check `config/knowledge-faq.yaml` first, then re-verify
+  its cited sources live (never post a cached answer unverified).
 
 ### Step 2 — Load service-specific knowledge expansion
 - If a service was matched, check `config/knowledge_expansion/knowledge_expansion_{service}.yaml`.
@@ -42,7 +52,11 @@ When the solution-agent or main agent needs deeper context than what the ticket-
 
 ### Step 6 — Summarize with citations
 - Compile all findings into a structured summary.
-- Every fact must have a source citation.
+- Every fact must have a **per-claim** source citation (not one blanket citation).
+- Record how many **independent** sources back each key fact → drives confidence level.
+- **Flag conflicts**: if two sources disagree, keep both, mark the conflict, and
+  prefer the more recent (per `000-context-accuracy.mdc`).
+- Note any claim you could NOT source → it must be omitted or marked `⚠️ unverified`.
 - Return to the requesting agent/skill.
 
 ## Guardrail

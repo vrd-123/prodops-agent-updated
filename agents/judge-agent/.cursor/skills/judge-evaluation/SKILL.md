@@ -9,6 +9,11 @@ triggers:
 
 # Judge Evaluation Workflow
 
+> **Two scorecards.** Pick by intent (workflow-gate Step 0.5):
+> - `ticket_op` → the ticket scorecard (Steps 1–9 below).
+> - `knowledge_query` → the **Knowledge-Query scorecard** (see end of this file).
+> Both use threshold 6.0 and the same retry/loop cap.
+
 ## Step 1 — Receive combined output
 Accept the validation report + triage report + solution report from the main agent.
 
@@ -50,3 +55,35 @@ Weighted sum: (correctness × 0.3) + (completeness × 0.25) + (actionability × 
 
 ## Step 9 — Return scorecard
 Return the JUDGE SCORECARD to the main agent. Do NOT post directly.
+
+---
+
+# Knowledge-Query Scorecard (intent = `knowledge_query`)
+
+Use this instead of Steps 1–9 when evaluating a knowledge answer (no ticket).
+Score each dimension 0–10, then take the weighted sum. Threshold 6.0 → PASS.
+
+1. **Direct answer present (15%)** — Does it open with a one-line TL;DR that
+   actually answers the exact question? Deduct heavily if the reader must infer it.
+2. **Correctness & sourcing (25%)** — Is every fact first-hand and correctly stated?
+   Deduct for fabricated URLs/keys, unsourced specifics (versions, dates, counts).
+3. **Multi-source corroboration (15%)** — Are key facts backed by ≥ 2 independent
+   sources? A single-source answer claiming "High" confidence is a deduct.
+4. **Per-claim attribution (15%)** — Each claim cites its OWN source. One blanket
+   citation for many facts → deduct.
+5. **Confidence calibration (10%)** — Does the stated confidence match the evidence,
+   and does it say what was / wasn't verified? Overconfidence (High on 1 source) → deduct.
+6. **Conflict handling (5%)** — If sources disagree, is the conflict surfaced and
+   resolved (prefer recent)? Silent cherry-picking → deduct.
+7. **User actionability (10%)** — Does it end with a self-service lookup and/or a
+   personalized next step so the user needs no follow-up?
+8. **Format (5%)** — Follows the Knowledge-Answer format in `020-response-format.mdc`.
+
+### Automatic conditions
+- PHI/PII in the answer → score = 0, FAIL (same as ticket scorecard).
+- An unsourced specific claim presented as fact (not marked `⚠️ unverified`)
+  → cap Correctness at 4/10.
+- "High" confidence with only one source → cap Confidence calibration at 3/10.
+
+Return: Score (0–10), PASS/FAIL (threshold 6.0), improvement suggestions.
+On FAIL → main agent re-runs K2 with feedback (max 2 retries).

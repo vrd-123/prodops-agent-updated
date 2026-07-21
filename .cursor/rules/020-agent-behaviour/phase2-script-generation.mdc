@@ -1,0 +1,66 @@
+---
+description: Phase 2 — Script Generation trigger and guardrails
+globs:
+alwaysApply: true
+---
+
+# Phase 2: Script Generation Rules
+
+## Trigger Detection
+
+When the user's message in Slack matches any of these patterns, activate the
+script-generation skill (see `.cursor/skills/script-generation/skill.md`):
+
+- `generate script for PRODOPS-XXXX`
+- `script for PRODOPS-XXXX`
+- `script PRODOPS-XXXX`
+- `generate PRODOPS-XXXX`
+
+## Guardrails
+
+1. **Jira is READ-ONLY**
+   - Only `GET /rest/api/3/issue/{key}` is allowed
+   - NEVER post comments (`POST .../comment`)
+   - NEVER update fields (`PUT /rest/api/3/issue/{key}`)
+   - NEVER transition status
+
+2. **Bot generates, human executes**
+   - The bot NEVER runs shell commands, kubectl, aws cli, or any infra tool
+   - The bot outputs a `bash` code block for the engineer to review and run
+
+3. **S3 URIs come from the ticket**
+   - Extract full S3 URIs (including account_id) from the ticket description
+   - NEVER construct bucket names from env_config.yaml
+   - NEVER hardcode or guess account IDs
+
+4. **FHIR environment names come from the ticket**
+   - Extract gw{nn}-{state}-{env} patterns from the description
+   - NEVER construct FHIR environment names from config
+
+5. **env_config.yaml provides ONLY infra context**
+   - AWS SSO profile name
+   - EKS cluster name
+   - Region
+   - Nothing else (no account IDs, no S3 bucket patterns)
+
+6. **Dry-run is mandatory**
+   - Every generated script MUST have a dry-run step BEFORE the execute step
+   - The execute step must be clearly separated (commented out or after a review prompt)
+
+7. **Warnings are surfaced, not suppressed**
+   - Path/bucket env mismatch → warn
+   - Workspace field disagrees with description → warn
+   - Missing fields → list exactly what's missing
+
+8. **Slack output format**
+   - One-line summary: `📋 PRODOPS-XXXX | Task Type | Customer | Direction/Env`
+   - Full script as ````bash` code block
+   - Warnings appear ABOVE the script
+   - Never post the script outside a code block
+
+## Scope Boundary
+
+Phase 2 (script generation) is SEPARATE from Phase 1 (triage/validation).
+- Phase 1 triggers on NEW ticket creation → validates → classifies → comments
+- Phase 2 triggers on EXPLICIT user request → reads ticket → generates script → posts to Slack
+- They do NOT interfere with each other

@@ -9,7 +9,9 @@ alwaysApply: true
 ## Rule
 Every response from the main agent MUST follow the `prodops-workflow-gate` skill (`.cursor/skills/prodops-workflow-gate/SKILL.md`).
 
-## Steps (always in order):
+## Step 0.5 first — detect intent, then run its step set:
+
+### Intent `ticket_op` (a Jira ticket to action):
 0. Greeting (first message only)
 1. Ticket Intake
 2. Validation (consult validator-agent)
@@ -18,6 +20,15 @@ Every response from the main agent MUST follow the `prodops-workflow-gate` skill
 5. Judge (consult judge-agent)
 6. Comment (format and post)
 
+### Intent `knowledge_query` (a general question, no ticket):
+0. Greeting (first message only)
+K1. Query Intake (parse question + entities; check `config/knowledge-faq.yaml`)
+K2. Knowledge Search (skill: knowledge-expansion, + solution-agent) — exhaust sources
+K3. Judge (consult judge-agent — knowledge_query scorecard)
+K4. Answer (Knowledge-Answer format)
+
 ## No partial runs:
 - If the user asks "just validate this ticket," still run Steps 1–6 internally but only surface the validation section in the comment.
 - Internal steps are never skipped; only the visible output may be scoped.
+- For `knowledge_query`, Validation and Triage are N/A (no ticket) — this is the only
+  sanctioned skip; K2 (search) and K3 (judge) are still mandatory.

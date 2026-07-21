@@ -1,0 +1,150 @@
+# ============================================================================
+# ProdOps Phase 2 — Environment Configuration
+# ============================================================================
+# Maps Customer → AWS SSO profile + EKS cluster.
+#
+# KEY INSIGHT from real tickets:
+#   S3 URIs (with account_id) are ALWAYS in the ticket description.
+#   We do NOT construct bucket names — we extract them directly.
+#   This config only provides the AWS/EKS infra needed to run commands.
+#
+# FHIR environment names (e.g. gw03-vt-dev) are also in the ticket
+#   description — we extract them, not construct them.
+# ============================================================================
+
+customers:
+  # ------------------------------------------------------------------
+  # BCI — Blue Cross Idaho
+  # Tickets: PRODOPS-3352, 3338, 3249, 3248, 3247, 3246, 3245, 3244,
+  #          3243, 3242, 3241, 3240, 3239, 3238, 3231, 3205
+  # S3 pattern: abacus-bcidaho-data-lake-{env}-028341391344-us-east-1
+  # ------------------------------------------------------------------
+  BCI:
+    customer_tag: bcidaho
+    aws_profile: bcidaho
+    region: us-east-1
+    eks_cluster: bcidaho
+
+  # ------------------------------------------------------------------
+  # BlueKC — Blue Cross Blue Shield of Kansas City
+  # Tickets: PRODOPS-3417, 3415, 3307, 3305, 3266, 3211
+  # S3 pattern: abacus-bluekc-data-lake-{env}-609151644478-us-east-1
+  # ------------------------------------------------------------------
+  BlueKC:
+    customer_tag: bluekc
+    aws_profile: bluekc
+    region: us-east-1
+    eks_cluster: bluekc
+
+  # ------------------------------------------------------------------
+  # Medstar
+  # Tickets: PRODOPS-3384, 3367, 3255, 3413 (FHIR)
+  # S3 pattern: abacus-medstar-data-lake-{env}-491085411031-us-east-1
+  # FHIR env: medstar-stg, medstar-dev
+  # ------------------------------------------------------------------
+  Medstar:
+    customer_tag: medstar
+    aws_profile: medstar
+    region: us-east-1
+    eks_cluster: medstar
+
+  # ------------------------------------------------------------------
+  # Gainwell
+  # Tickets: PRODOPS-3346 (S3), 3422, 3421, 3412, 3409, 3403, 3402,
+  #          3398, 3391, 3388, 3382, 3381, 3371, 3363, 3362, 3361,
+  #          3360, 3356, 3351, 3345, 3337, 3322, 3321 (FHIR)
+  #
+  # S3 pattern: abacus-gw{nn}-data-lake-{state}-{env}-195275635121-us-east-1
+  # FHIR envs: gw01-wv-dev, gw01-wv-stg, gw01-in-stg,
+  #   gw02-ks-dev, gw02-nv-stg, gw03-vt-dev, gw03-vt-stg,
+  #   gw03-ct-stg, gw03-ok-stg, gw03-vt-uat
+  # ------------------------------------------------------------------
+  Gainwell:
+    customer_tag: gainwell
+    aws_profile: gainwell-nxgen
+    region: us-east-1
+    eks_cluster: gainwell
+
+  # ------------------------------------------------------------------
+  # Cambia
+  # Tickets: PRODOPS-3359 (FHIR), 3387 (S3)
+  # FHIR envs: cambia02-offshore, cambia-dev, cambia-stg
+  # NOTE: Has 2 tenants — cambia and cambia02
+  # ------------------------------------------------------------------
+  Cambia:
+    customer_tag: cambia
+    aws_profile: cambia
+    region: us-east-1
+    eks_cluster: cambia
+    onshore_only: true
+
+  # ------------------------------------------------------------------
+  # PHP — Presbyterian Health Plan
+  # Tickets: PRODOPS-3333
+  # ------------------------------------------------------------------
+  PHP:
+    customer_tag: php
+    aws_profile: ng-php
+    region: us-east-1
+    eks_cluster: php
+
+  # ------------------------------------------------------------------
+  # BCBSMA — Blue Cross Blue Shield of Massachusetts
+  # ------------------------------------------------------------------
+  BCBSMA:
+    customer_tag: bcbsma
+    aws_profile: bcbsma
+    region: us-east-1
+    eks_cluster: bcbsma
+
+  # ------------------------------------------------------------------
+  # BCBSNC — Blue Cross Blue Shield of North Carolina
+  # ------------------------------------------------------------------
+  BCBSNC:
+    customer_tag: bcbsnc
+    aws_profile: bcbsnc
+    region: us-east-1
+    eks_cluster: bcbsnc
+
+  # ------------------------------------------------------------------
+  # Clover
+  # ------------------------------------------------------------------
+  Clover:
+    customer_tag: clover
+    aws_profile: clover
+    region: us-east-1
+    eks_cluster: clover
+
+# ============================================================================
+# Break-glass pod constants (same for every S3 task)
+# ============================================================================
+break_glass:
+  namespace: break-glass
+  service_account: break-glass
+  image: amazon/aws-cli:latest
+  restart_policy: Never
+
+# ============================================================================
+# FHIR cleanup constants
+# ============================================================================
+fhir_cleanup:
+  script_name: fhir_cleanup.py
+  config_name: fhir_environments.yaml
+  mongo_namespace: onyx-mongodb
+
+# ============================================================================
+# Customer alias mapping
+# ============================================================================
+customer_aliases:
+  bcidaho: BCI
+  "blue cross idaho": BCI
+  bluekc: BlueKC
+  "blue cross kansas city": BlueKC
+  medstar: Medstar
+  gainwell: Gainwell
+  cambia: Cambia
+  php: PHP
+  "presbyterian health plan": PHP
+  bcbsma: BCBSMA
+  bcbsnc: BCBSNC
+  clover: Clover

@@ -1,0 +1,119 @@
+{
+  "_note": "Illustrative payload — content transcribed from a user-supplied reference image of the Seiji Deploy workflow Confluence diagram. When the bot runs this template live, K1-K2 must re-verify each lane, node, chip, tag, and source against the live Confluence page before rendering. Never fabricate node names, tool names, or repo paths.",
+
+  "topic": "Seiji Deploy Workflow",
+  "kind": "Workflow / architecture",
+  "question": "Explain the Seiji Deploy workflow in detail with the help of a diagram.",
+
+  "tldr": "Seiji orchestrates <b>three data-plane paths</b> — SQL Server outbound over an SSH tunnel, SFTP inbound from external servers, and SFTP outbound from S3 — with private keys held in <b>AWS Secrets Manager</b> and public keys distributed via tenant config.",
+
+  "lanes": [
+    {
+      "title": "SQL Server Outbound (SSH Tunnel)",
+      "icon": "🔵",
+      "color": "blue",
+      "direction": "ltr",
+      "nodes": [
+        { "icon": "🧊", "title": "Databricks",           "sub": "Secure VPC" },
+        { "icon": "🌉", "title": "VPC Bridge" },
+        { "icon": "🔐", "title": "SSH Tunnel Service",   "sub": "ng-databricks-outbound-infra",
+          "chips": [ { "kind": "key", "icon": "🔑", "text": "<b>ssh_private_key</b> in AWS Secrets Manager" } ] },
+        { "icon": "🛡️", "title": "Customer Bastion / Jump Server",
+          "chips": [ { "kind": "pubkey", "icon": "🗝️", "text": "customer authorized public key" } ] },
+        { "icon": "🗄️", "title": "On-prem SQL Server",   "sub": "Port 1433" }
+      ],
+      "edges": [
+        {}, {}, { "label": "SSH Tunnel" }, {}
+      ],
+      "tag_label": "Seiji layers",
+      "tags": [
+        "nextgen.ssh_service.tunnel_manager",
+        "nextgen.ssh_service.bridge",
+        "nextgen.test_jump_server.bastionhost"
+      ]
+    },
+    {
+      "title": "SFTP Inbound",
+      "icon": "🟢",
+      "color": "green",
+      "direction": "rtl",
+      "nodes": [
+        { "icon": "🖥️", "title": "External SFTP Server", "sub": "sftp_private_key (KEY / MFA auth)" },
+        { "icon": "☁️", "title": "ng-abacus-inbound-infra", "sub": "SSH client" },
+        { "icon": "🧪", "title": "Abacus-hosted SFTP Test Server",
+          "chips": [ { "kind": "pubkey", "icon": "🗝️", "text": "<b>ssh_pubkey</b> in tenant config + <code>configmap_key.yaml</code>" } ] },
+        { "icon": "🔐", "title": "AWS Secrets Manager",  "sub": "Path: <code>sftp_service/credentials</code>" }
+      ],
+      "edges": [ {}, {}, {} ]
+    },
+    {
+      "title": "SFTP Outbound",
+      "icon": "🟠",
+      "color": "orange",
+      "direction": "ltr",
+      "nodes": [
+        { "icon": "🪣", "title": "S3 Bucket" },
+        { "icon": "⏰", "title": "SFTP Outbound Cron",   "sub": "ng-abacus-outbound-infra",
+          "chips": [ { "kind": "key", "icon": "🔑", "text": "<b>sftp_private_key</b> in AWS Secrets Manager" } ] },
+        { "icon": "🖥️", "title": "External or test SFTP server" }
+      ],
+      "edges": [ {}, {} ]
+    }
+  ],
+
+  "side": [
+    {
+      "type": "info",
+      "title": "Customer SFTP Access to Abacus (S3 Transfer)",
+      "color": "purple",
+      "items": [
+        { "icon": "🗝️", "title": "Customer provides public SSH key" },
+        { "icon": "📝", "title": "ng-deployment-config-files", "sub": "tenant overrides" },
+        { "icon": "☁️", "title": "AWS Transfer Family / Abacus SFTP endpoint", "sub": "<code>s3transfer.abacus.ai</code>" }
+      ]
+    },
+    {
+      "type": "legend",
+      "title": "Legend",
+      "items": [
+        { "kind": "key",    "icon": "🔑", "text": "Private keys stored securely in <b>AWS Secrets Manager</b> (accessed by services)" },
+        { "kind": "pubkey", "icon": "🗝️", "text": "Public keys stored in tenant config / authorized_keys (used to authorize access)" }
+      ]
+    }
+  ],
+
+  "sources": [
+    {
+      "title": "Confluence",
+      "items": [
+        { "title": "Seiji Deploy Workflow (canonical)", "meta": "resolve URL live during K2" }
+      ]
+    },
+    {
+      "title": "Repo / catalog",
+      "items": [
+        { "title": "ng-databricks-outbound-infra" },
+        { "title": "ng-abacus-inbound-infra" },
+        { "title": "ng-abacus-outbound-infra" },
+        { "title": "ng-deployment-config-files", "meta": "tenant overrides" }
+      ]
+    }
+  ],
+
+  "confidence": {
+    "level": "Medium",
+    "verified": "Lane structure, node names, and key-management pattern taken from a user-supplied reference image of the Seiji Confluence diagram.",
+    "not_verified": "Live Confluence URL, page-last-modified date, exact repo paths, and any recent changes not reflected in the reference image. Re-verify against the live Confluence page before treating this as authoritative."
+  },
+
+  "for_you": [
+    {
+      "kind": "lookup",
+      "text": "<b>Self-service:</b> open the <b>Seiji Deploy Workflow</b> Confluence page (Abacus NextGen 2.0 space) to see the live version of this diagram and any tenant-specific overrides in <code>ng-deployment-config-files</code>."
+    },
+    {
+      "kind": "recommend",
+      "text": "<b>Recommendation:</b> if you are adding a new tenant, confirm the public-key hand-off (customer public key → tenant config) and the AWS Transfer Family endpoint provisioning are both scheduled before enabling the SFTP flow."
+    }
+  ]
+}

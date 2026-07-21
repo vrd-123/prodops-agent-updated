@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ProdOps Bot — {{ topic }}</title>
+<style>
+  :root {
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #0F1B2E;
+    --ink-soft: #4C5A72;
+    --ink-mute: #7A8699;
+    --border: #E4E9F2;
+    --shadow: 0 2px 4px rgba(15,27,46,.04), 0 8px 24px rgba(15,27,46,.06);
+
+    --sev-red: #DC2626;      --sev-red-bg: #FEE2E2;
+    --sev-pink: #DB2777;     --sev-pink-bg: #FCE7F3;
+    --sev-green: #16A34A;    --sev-green-bg: #DCFCE7;
+    --sev-lime: #65A30D;     --sev-lime-bg: #ECFCCB;
+    --sev-blue: #2563EB;     --sev-blue-bg: #DBEAFE;
+    --sev-amber: #D97706;    --sev-amber-bg: #FEF3C7;
+    --sev-slate: #475569;    --sev-slate-bg: #E2E8F0;
+    --sev-purple: #7C3AED;   --sev-purple-bg: #EDE9FE;
+    --sev-teal: #0D9488;     --sev-teal-bg: #CCFBF1;
+    --sev-indigo: #4F46E5;   --sev-indigo-bg: #EEF2FF;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  .page { width: 1200px; padding: 48px; }
+
+  /* ---------- Header ---------- */
+  .header {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px 32px; box-shadow: var(--shadow); margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .header-left { display: flex; gap: 20px; align-items: center; }
+  .header-icon {
+    width: 64px; height: 64px; border-radius: 14px;
+    background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 32px; flex-shrink: 0;
+  }
+  .header-text { display: flex; flex-direction: column; gap: 6px; }
+  .kind-tag {
+    font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--sev-indigo);
+  }
+  .topic { font-size: 24px; font-weight: 700; color: var(--ink); line-height: 1.25; max-width: 780px; }
+  .question { font-size: 14px; color: var(--ink-mute); margin-top: 4px; max-width: 820px; line-height: 1.4; }
+  .question b { color: var(--ink-soft); font-weight: 600; }
+
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+  }
+  .pill.confidence-high   { background: var(--sev-green-bg); color: var(--sev-green); }
+  .pill.confidence-medium { background: var(--sev-amber-bg); color: var(--sev-amber); }
+  .pill.confidence-low    { background: var(--sev-red-bg);   color: var(--sev-red); }
+  .pill.intent            { background: var(--sev-purple-bg); color: var(--sev-purple); }
+
+  /* ---------- TL;DR callout ---------- */
+  .tldr {
+    background: linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%);
+    border: 1px solid #C7D2FE; border-radius: 16px;
+    padding: 22px 26px; margin-bottom: 20px; box-shadow: var(--shadow);
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .tldr-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--sev-indigo); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .tldr-body { flex: 1; }
+  .tldr-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--sev-indigo); margin-bottom: 4px;
+  }
+  .tldr-text { font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+  .tldr-text code { font-size: 14px; }
+
+  /* ---------- Section cards ---------- */
+  .section {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 28px; box-shadow: var(--shadow); margin-bottom: 20px;
+    position: relative; overflow: hidden;
+  }
+  .section::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+  }
+  .section.facts::before      { background: var(--sev-blue); }
+  .section.stages::before     { background: var(--sev-teal); }
+  .section.matrix::before     { background: var(--sev-purple); }
+  .section.sources::before    { background: var(--sev-slate); }
+  .section.confidence::before { background: var(--sev-amber); }
+  .section.foryou::before     { background: var(--sev-green); }
+
+  .section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .section-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .section.facts      .section-icon { background: var(--sev-blue-bg);   color: var(--sev-blue); }
+  .section.stages     .section-icon { background: var(--sev-teal-bg);   color: var(--sev-teal); }
+  .section.matrix     .section-icon { background: var(--sev-purple-bg); color: var(--sev-purple); }
+  .section.sources    .section-icon { background: var(--sev-slate-bg);  color: var(--sev-slate); }
+  .section.confidence .section-icon { background: var(--sev-amber-bg);  color: var(--sev-amber); }
+  .section.foryou     .section-icon { background: var(--sev-green-bg);  color: var(--sev-green); }
+
+  .section-title { font-size: 18px; font-weight: 700; color: var(--ink); }
+  .section-sub   { font-size: 13px; color: var(--ink-mute); margin-top: 2px; }
+
+  .body-text { font-size: 15px; color: var(--ink-soft); line-height: 1.55; }
+  .body-text b { color: var(--ink); font-weight: 600; }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: #F1F3F8; color: #1E293B;
+    padding: 2px 6px; border-radius: 6px;
+    border: 1px solid #E2E8F0;
+  }
+
+  /* ---------- Key facts ---------- */
+  .facts-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+  .fact {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 16px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 12px;
+  }
+  .fact-dot {
+    width: 10px; height: 10px; border-radius: 50%; margin-top: 8px;
+    background: var(--sev-blue); flex-shrink: 0;
+  }
+  .fact.warn .fact-dot { background: var(--sev-amber); }
+  .fact-body { flex: 1; }
+  .fact-text { font-size: 14.5px; color: var(--ink); line-height: 1.5; }
+  .fact-text b { color: var(--ink); font-weight: 600; }
+  .fact-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ---------- Stages / sequence ---------- */
+  .stages-list { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+  .stage {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 14px 16px; background: #F0FDFA; border: 1px solid #CCFBF1; border-radius: 12px;
+  }
+  .stage-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--sev-teal); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .stage-body { flex: 1; }
+  .stage-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .stage-detail { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
+  .stage-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* ---------- Matrix ---------- */
+  .matrix-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    margin-top: 4px; overflow: hidden;
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .matrix-table th, .matrix-table td {
+    padding: 12px 14px; text-align: left; font-size: 14px;
+    border-bottom: 1px solid var(--border); vertical-align: top;
+  }
+  .matrix-table thead th {
+    background: #F8FAFC; color: var(--ink-soft);
+    font-weight: 600; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .matrix-table tbody tr:last-child td { border-bottom: none; }
+  .matrix-table tbody td { color: var(--ink); }
+  .matrix-table tbody td b { color: var(--ink); }
+  .matrix-table tbody td .sub { color: var(--ink-mute); font-size: 12px; margin-top: 2px; display: block; }
+
+  /* ---------- Source badges ---------- */
+  .source-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sev-indigo-bg); color: var(--sev-indigo);
+    font-size: 11.5px; font-weight: 600;
+    padding: 4px 10px; border-radius: 6px;
+    border: 1px solid #E0E7FF;
+  }
+  .source-badge.jira      { background: #FEF3C7; color: #B45309; border-color: #FDE68A; }
+  .source-badge.slack     { background: #FCE7F3; color: #BE185D; border-color: #FBCFE8; }
+  .source-badge.confluence{ background: #EEF2FF; color: #4338CA; border-color: #E0E7FF; }
+  .source-badge.repo      { background: #E2E8F0; color: #334155; border-color: #CBD5E1; }
+  .source-badge.unverified{ background: var(--sev-amber-bg); color: var(--sev-amber); border-color: #FCD34D; }
+  .source-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ---------- Sources section ---------- */
+  .sources-groups { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+  .sources-group {
+    padding: 12px 14px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px;
+  }
+  .sources-group-title {
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 8px;
+  }
+  .source-item { font-size: 13.5px; color: var(--ink); line-height: 1.5; padding: 2px 0; }
+  .source-item b { color: var(--ink); font-weight: 600; }
+  .source-item .meta { color: var(--ink-mute); font-size: 12px; }
+  .conflict-note {
+    margin-top: 10px; padding: 10px 12px;
+    background: var(--sev-amber-bg); border: 1px solid #FCD34D; border-radius: 8px;
+    font-size: 13px; color: #92400E; line-height: 1.45;
+  }
+
+  /* ---------- Confidence ---------- */
+  .conf-card {
+    display: flex; gap: 18px; align-items: center; padding: 4px 2px;
+  }
+  .conf-level {
+    padding: 10px 18px; border-radius: 12px; font-size: 15px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .conf-level.high   { background: var(--sev-green-bg); color: var(--sev-green); }
+  .conf-level.medium { background: var(--sev-amber-bg); color: var(--sev-amber); }
+  .conf-level.low    { background: var(--sev-red-bg);   color: var(--sev-red); }
+  .conf-detail { flex: 1; font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; }
+  .conf-detail b { color: var(--ink); font-weight: 600; }
+  .conf-detail .not-verified {
+    display: block; margin-top: 6px; padding: 8px 10px;
+    background: #FEF3C7; border-left: 3px solid var(--sev-amber);
+    color: #92400E; font-size: 13px; border-radius: 4px;
+  }
+
+  /* ---------- For you ---------- */
+  .foryou-list { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .foryou-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px 14px; background: #F6FBF3; border: 1px solid #DCFCE7; border-radius: 10px;
+  }
+  .foryou-check {
+    width: 22px; height: 22px; border-radius: 50%; margin-top: 1px;
+    background: var(--sev-green); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .foryou-text { font-size: 14px; color: var(--ink); line-height: 1.5; }
+  .foryou-text b { color: var(--ink); font-weight: 600; }
+  .foryou-item.recommend .foryou-check { background: var(--sev-indigo); }
+  .foryou-item.recommend { background: #F5F3FF; border-color: #DDD6FE; }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; margin-top: 4px;
+    font-size: 12px; color: var(--ink-mute);
+  }
+  .footer .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ink-soft); }
+  .footer .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sev-indigo); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  {# =========================================================
+     HEADER — topic + original question + confidence pill
+     ========================================================= #}
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">🤖</div>
+      <div class="header-text">
+        <div class="kind-tag">Knowledge answer{% if kind is defined and kind %} · {{ kind }}{% endif %}</div>
+        <div class="topic">{{ topic }}</div>
+        {% if question is defined and question %}<div class="question">🗨️ <b>Question:</b> {{ question|safe }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="pill intent">● knowledge_query</span>
+      {% if confidence is defined and confidence and confidence.level is defined and confidence.level %}
+        <span class="pill confidence-{{ confidence.level|lower }}">📊 Confidence · {{ confidence.level }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# =========================================================
+     TL;DR — required, one-line direct answer
+     ========================================================= #}
+  {% if tldr is defined and tldr %}
+  <div class="tldr">
+    <div class="tldr-icon">💡</div>
+    <div class="tldr-body">
+      <div class="tldr-label">TL;DR</div>
+      <div class="tldr-text">{{ tldr|safe }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     KEY FACTS — the body of the answer, per-claim sources
+     ========================================================= #}
+  {% if facts is defined and facts %}
+  <div class="section facts">
+    <div class="section-head">
+      <div class="section-icon">📌</div>
+      <div>
+        <div class="section-title">Key facts</div>
+        <div class="section-sub">Each claim cites its own first-hand source</div>
+      </div>
+    </div>
+    <div class="facts-list">
+      {% for f in facts %}
+      <div class="fact{% if f.warn is defined and f.warn %} warn{% endif %}">
+        <div class="fact-dot"></div>
+        <div class="fact-body">
+          <div class="fact-text">{{ f.text|safe }}</div>
+          {% if f.sources is defined and f.sources %}
+          <div class="fact-meta">
+            {% for s in f.sources %}
+              <span class="source-badge {{ (s.kind if s.kind is defined else 'confluence') }}"><span class="dot"></span>{{ s.label }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     STAGES — optional; use for workflow / pipeline explanations
+     ========================================================= #}
+  {% if stages is defined and stages %}
+  <div class="section stages">
+    <div class="section-head">
+      <div class="section-icon">⚙️</div>
+      <div>
+        <div class="section-title">{{ stages.title or 'Stages' }}</div>
+        <div class="section-sub">{{ stages.subtitle or 'Sequence — each stage cites the source page that documents it' }}</div>
+      </div>
+    </div>
+    <div class="stages-list">
+      {% for s in stages['items'] %}
+      <div class="stage">
+        <div class="stage-num">{{ loop.index }}</div>
+        <div class="stage-body">
+          <div class="stage-title">{{ s.title }}</div>
+          {% if s.detail is defined and s.detail %}<div class="stage-detail">{{ s.detail|safe }}</div>{% endif %}
+          {% if s.sources is defined and s.sources %}
+          <div class="stage-meta">
+            {% for src in s.sources %}
+              <span class="source-badge {{ (src.kind if src.kind is defined else 'confluence') }}"><span class="dot"></span>{{ src.label }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     MATRIX — optional; use for mapping / version / comparison
+     ========================================================= #}
+  {% if matrix is defined and matrix %}
+  <div class="section matrix">
+    <div class="section-head">
+      <div class="section-icon">🗺️</div>
+      <div>
+        <div class="section-title">{{ matrix.title or 'Mapping' }}</div>
+        <div class="section-sub">{{ matrix.subtitle or 'Row-by-row comparison with sources' }}</div>
+      </div>
+    </div>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          {% for h in matrix.headers %}<th>{{ h }}</th>{% endfor %}
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in matrix['rows'] %}
+        <tr>
+          {% for cell in row.cells %}
+          <td>
+            <b>{{ cell.value|safe }}</b>
+            {% if cell.sub is defined and cell.sub %}<span class="sub">{{ cell.sub|safe }}</span>{% endif %}
+          </td>
+          {% endfor %}
+          <td>
+            {% for s in (row.sources if row.sources is defined else []) %}
+              <span class="source-badge {{ (s.kind if s.kind is defined else 'confluence') }}"><span class="dot"></span>{{ s.label }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     SOURCES — grouped by kind
+     ========================================================= #}
+  {% if sources is defined and sources %}
+  <div class="section sources">
+    <div class="section-head">
+      <div class="section-icon">📚</div>
+      <div>
+        <div class="section-title">Sources</div>
+        <div class="section-sub">All first-hand references consulted for this answer</div>
+      </div>
+    </div>
+    <div class="sources-groups">
+      {% for group in sources %}
+      <div class="sources-group">
+        <div class="sources-group-title">{{ group.title }}</div>
+        {% for item in group['items'] %}
+        <div class="source-item">
+          • <b>{{ item.title }}</b>
+          {% if item.meta is defined and item.meta %}<span class="meta"> — {{ item.meta }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if conflicts is defined and conflicts %}
+      {% for c in conflicts %}
+      <div class="conflict-note">⚠️ <b>Conflict:</b> {{ c|safe }}</div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     CONFIDENCE — calibrated (what was and wasn't verified)
+     ========================================================= #}
+  {% if confidence is defined and confidence %}
+  <div class="section confidence">
+    <div class="section-head">
+      <div class="section-icon">📊</div>
+      <div>
+        <div class="section-title">Confidence</div>
+        <div class="section-sub">Calibrated to the evidence, not the model's certainty</div>
+      </div>
+    </div>
+    <div class="conf-card">
+      <span class="conf-level {{ confidence.level|lower }}">{{ confidence.level }}</span>
+      <div class="conf-detail">
+        {% if confidence.verified is defined and confidence.verified %}<b>Verified:</b> {{ confidence.verified|safe }}{% endif %}
+        {% if confidence.not_verified is defined and confidence.not_verified %}
+          <span class="not-verified"><b>Not verified:</b> {{ confidence.not_verified|safe }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# =========================================================
+     FOR YOU — self-service lookup + personalized recommendation
+     ========================================================= #}
+  {% if for_you is defined and for_you %}
+  <div class="section foryou">
+    <div class="section-head">
+      <div class="section-icon">✅</div>
+      <div>
+        <div class="section-title">For you (next steps)</div>
+        <div class="section-sub">Something concrete you can do without a follow-up</div>
+      </div>
+    </div>
+    <div class="foryou-list">
+      {% for item in for_you %}
+      {% set _kind = (item.kind if item.kind is defined else 'lookup') %}
+      <div class="foryou-item {% if _kind == 'recommend' %}recommend{% endif %}">
+        <div class="foryou-check">{% if _kind == 'recommend' %}★{% else %}✓{% endif %}</div>
+        <div class="foryou-text">{{ item.text|safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    <div class="brand"><span class="brand-dot"></span>ProdOps Bot · Abacus Insights · knowledge_query</div>
+    <div>Generated {{ generated_at }}</div>
+  </div>
+
+</div>
+</body>
+</html>

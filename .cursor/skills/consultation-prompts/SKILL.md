@@ -35,17 +35,19 @@ CHECKLIST (from config/validation-checklist.yaml):
 For each checklist item, report: ✅ Present / ❌ Missing / ⚠️ Incomplete
 Provide a completeness score: X/9
 
-If ticket contains attachments, invoke the attachment-reader skill as follows:
+If the ticket had attachments, the **main orchestrator has already run**
+`python scripts/attachment_reader/fetch.py {ISSUE_KEY}` in Step 1 of the workflow
+gate and passes you the resulting manifest and PHI-cleared observations. Do NOT
+re-run `fetch.py` yourself — subagents run in an environment where `.env` is not
+guaranteed to be loaded, and a fresh fetch there will emit a false
+"JIRA_BASE_URL not set / attachment pipeline unavailable" and mask real evidence.
 
-> **ATTACHMENT INSTRUCTIONS — PHI PROTECTION REQUIRED**
+> **ATTACHMENT INSTRUCTIONS — PHI PROTECTION REQUIRED (subagent, read-only)**
 >
-> 1. **Fetch attachments**: Run `python scripts/attachment_reader/fetch.py {ISSUE_KEY}`
->    in the terminal.
+> 1. **Read the manifest** the orchestrator produced:
+>    `workspace/attachments/{ISSUE_KEY}/_manifest.md`. Trust its PHI Status column.
 >
-> 2. **Read the manifest FIRST**: Open `workspace/attachments/{ISSUE_KEY}/_manifest.md`.
->    Check the PHI Status column for every file before reading anything.
->
-> 3. **PHI Pre-Check (MANDATORY)**:
+> 2. **PHI Pre-Check (MANDATORY)**:
 >    - Files marked `🚨 QUARANTINED` → DO NOT read. Note: "Attachment quarantined —
 >      PHI detected. Human review required."
 >    - Files marked `🚫 BLOCKED` → DO NOT read. Note: "Attachment blocked — PHI-risk
@@ -54,7 +56,13 @@ If ticket contains attachments, invoke the attachment-reader skill as follows:
 >      check (stop if you see SSN/MRN/DOB/patient names).
 >    - Images marked `✅ Clean` → View them, but DO NOT describe visible PHI.
 >
-> 4. **Include PHI Protection Summary** in your validation output (see guardrails Rule I-8).
+> 3. If the manifest is missing OR contains "Readable by agent: 0 — local
+>    attachment pipeline unavailable" → do NOT invent metadata-only inference.
+>    Return this exact blocker to the orchestrator so it can retry the fetch:
+>    "Blocker: orchestrator must re-run scripts/attachment_reader/fetch.py from
+>    repo root before validation can proceed."
+>
+> 4. **Include a PHI Protection Summary** in your output (guardrails Rule I-8).
 >
 > 5. Use the clean attachment content — error messages, config details, screenshots —
 >    to inform your completeness assessment.
@@ -347,6 +355,42 @@ If attachments were processed but no PHI Protection Summary is present,
 deduct 1.0 point from the Completeness score and note the omission.
 
 Return: Score (0-10), PASS/FAIL (threshold: 6.0), improvement suggestions.
+```
+
+---
+
+### Hook: judge — knowledge_query variant (→ judge-agent)
+
+Use this when the intent is `knowledge_query` (no ticket; see workflow-gate Step 0.5).
+
+```
+You are the Judge Agent for ProdOps. Evaluate a KNOWLEDGE ANSWER (no ticket).
+
+QUESTION:
+{user_question}
+
+DRAFT ANSWER:
+{knowledge_answer_draft}
+
+FACT LIST (claim → source(s) → date):
+{fact_list_with_sources}
+
+Score each dimension 0–10, then weighted sum (threshold 6.0 → PASS):
+1. Direct answer present (15%) — opens with a TL;DR that answers the exact question.
+2. Correctness & sourcing (25%) — every fact first-hand and correct; no fabricated URLs/keys/specifics.
+3. Multi-source corroboration (15%) — key facts backed by ≥ 2 independent sources.
+4. Per-claim attribution (15%) — each claim cites its OWN source (not one blanket citation).
+5. Confidence calibration (10%) — stated confidence matches evidence; says what was/wasn't verified.
+6. Conflict handling (5%) — disagreements surfaced and resolved (prefer recent).
+7. User actionability (10%) — ends with a self-service lookup and/or personalized next step.
+8. Format (5%) — follows the Knowledge-Answer format in 020-response-format.mdc.
+
+AUTOMATIC CONDITIONS:
+- PHI/PII present → score = 0, FAIL.
+- Unsourced specific claim presented as fact (not marked ⚠️ unverified) → cap Correctness at 4.
+- "High" confidence on a single source → cap Confidence calibration at 3.
+
+Return: Score (0-10), PASS/FAIL (threshold 6.0), improvement suggestions.
 ```
 
 ---

@@ -13,11 +13,28 @@ The bot ONLY posts structured comments on Jira tickets. It does NOT:
 - Send emails or Slack messages
 - Create Confluence pages
 
+There are TWO output formats, chosen by intent (see workflow-gate Step 0.5):
+- **`ticket_op`** → the **Comment structure** below (Validation → Triage → Related Past Issues).
+- **`knowledge_query`** → the **Knowledge-Answer format** further below.
+
+## Universal requirements (BOTH formats)
+- **Lead with the direct answer.** The first line is a one-sentence TL;DR that
+  answers the actual question / states the ticket's disposition. Never make the
+  reader infer it from a table.
+- **Per-claim source attribution.** Every fact carries its own source inline; a
+  single blanket citation at the bottom is not sufficient (see `000-guardrails.mdc`).
+- **Calibrated confidence.** State confidence AND what was / was not verified.
+  One source → not "High" (see `000-guardrails.mdc` Confidence Calibration).
+- **End with actionability.** Close with a concrete next step the reader can take
+  without a follow-up (a self-service lookup path and/or a personalized recommendation).
+
 ## Comment structure
 Every ticket comment follows this exact format:
 
 ```
 ## 🔍 ProdOps Bot Analysis
+
+**TL;DR:** customer_breakage on Airbyte for [client] → P1, route to Deepak; likely CDC offset — see steps below.
 
 ### ✅ Validation
 - [x] Clear summary/title
@@ -52,6 +69,42 @@ Assignee will investigate the root cause based on ticket priority.
 
 ---
 
+## Knowledge-Answer format (intent = `knowledge_query`)
+
+Used for general questions with no ticket to action (e.g. "what DBR version does
+AIR support?"). Follows the Universal requirements above.
+
+```
+## 🤖 ProdOps Bot — {topic}
+
+**TL;DR:** {one-sentence direct answer to the exact question}.
+
+{body — table or bullets with the detail; keep tight}
+
+### 📚 Sources
+- {claim} — [Confluence: Page Title](url) ({author/date if known})
+- {claim} — [PRODOPS-1234](url)
+- {claim} — [Slack: #channel](permalink) ({date})
+  (⚠️ Flag any conflicts between sources and state which was preferred and why.)
+
+### 📊 Confidence: {High | Medium | Low}
+{What was verified and against how many independent sources; what could NOT be
+verified. One source ⇒ Medium at most.}
+
+### ✅ For you (next steps)
+- {self-service lookup so the user can confirm their own case}
+- {personalized recommendation, e.g. "if on X (EoS <date>) → upgrade to Y"}
+```
+
+### When sources are insufficient:
+```
+### 📚 Sources
+Could not verify against a first-hand source (Confluence / Jira / Slack).
+Answer withheld to avoid guessing — please confirm with {owning team/page}.
+```
+
+---
+
 ## Diagram Quality Rule (mandatory before posting any diagram)
 
 Any Mermaid diagram uploaded to Slack (or referenced in a Jira comment) MUST
@@ -64,11 +117,16 @@ satisfy the **Content Requirements** defined in
 - [ ] Uses the standard `%%{init:}%%` dark-theme header from §3.
 - [ ] Has ≥ 8 meaningful nodes (excluding the Legend).
 - [ ] ≥ 60% of nodes use multi-line `<br/>` labels (title + context/evidence/timestamp).
-- [ ] Contains all 5 semantic zones (Context, Symptom, Root Cause, Resolution
-      Steps, Verification) — as subgraphs or clearly labeled clusters.
-      For non-resolution diagrams (infra, sequence, lifecycle, deployment,
-      relationship), map to the closest equivalent zones in the matching
-      template in §4.
+- [ ] Contains all 5 semantic zones **for the diagram's intent**:
+      - `ticket_op` (Templates 1–6): Context, Symptom, Root Cause,
+        Resolution Steps, Verification. For non-resolution `ticket_op` diagrams
+        (infra, sequence, lifecycle, deployment, relationship), map to the
+        closest equivalent zones in the matching template in §4.
+      - `knowledge_query` (**Template 7**): Purpose & Owner, Inputs / Triggers,
+        Stages / Orchestration, Outputs & Guarantees, Observability & Failure
+        Modes. Do NOT reuse the ticket zones — a workflow explanation has no
+        symptom, root cause, or verification step. Every Stage node MUST carry
+        a per-claim source (Confluence page title / `PRODOPS-XXXX` / channel).
 - [ ] ≥ 1 node cites a real source: `PRODOPS-XXXX`, Confluence page name,
       or Slack channel/thread.
 - [ ] ≥ 1 node includes a real timestamp/date from the ticket
@@ -117,15 +175,27 @@ satisfy the **Content Requirements** defined in
 
 Two diagram pipelines exist. Pick the right one per response.
 
-**Pipeline A — HTML infographic (default, preferred).**
+**Pipeline A — HTML infographic (default, preferred — required for `knowledge_query`).**
 Use `scripts/diagram_render/` (Playwright + Jinja2 HTML → PNG) when the
 response benefits from a polished summary card (branded typography,
 colored status pills, code blocks, verification checklist). This is the
 default for ticket-resolution replies, triage summaries, and any output
-where visual polish matters. Templates live in
+where visual polish matters. For `knowledge_query` this is not just the
+default — it is the required pipeline unless the answer genuinely needs a
+boxes-and-arrows flow that the card cannot express. Templates live in
 `scripts/diagram_render/templates/*.html.j2`. Available layouts:
 
-- `resolution_flow` — Symptom → Root Cause → Steps → Verify card.
+- `resolution_flow` — `ticket_op`: Symptom → Root Cause → Steps → Verify card.
+- `knowledge_answer` — `knowledge_query` (**text-shaped** answers):
+  TL;DR → Key Facts → optional Stages → optional Matrix → Sources →
+  Confidence → For you. Use for definitions, version mappings, ownership
+  questions, comparisons.
+- `knowledge_workflow` — `knowledge_query` (**diagram-shaped** answers):
+  TL;DR → colored lanes with boxes-and-arrows, key/secret chips, per-lane
+  tags → optional side column (info boxes + legend) → Sources → Confidence
+  → For you. Use for architecture / pipeline / workflow explanations
+  ("explain how X works").
+  See `scripts/diagram_render/README.md` for both block references.
   (Add new layouts here — do not fork or hand-roll HTML.)
 
 Invocation:

@@ -1,0 +1,120 @@
+{
+  "_note": "Schema-by-example for the knowledge_answer template. Every field except `topic` and `tldr` is optional — omit any block that the sourced material cannot fill honestly (drop-if-unsourced, per 000-guardrails.mdc). Do NOT invent URLs, dates, or page IDs to fill this file; the K1-K2 knowledge search must supply them.",
+
+  "topic": "AIR / DBR version support",
+  "kind": "Version mapping",
+  "question": "What version of DBR (Databricks Runtime) does AIR currently support?",
+
+  "tldr": "Current <b>AIR 3.x</b> runs on <b>DBR 17.3-LTS</b>. Each AIR major version maps to exactly one DBR LTS line.",
+
+  "facts": [
+    {
+      "text": "Each AIR major version pins to exactly one DBR LTS — Abacus does not adopt every DBR release (e.g. no AIR based on DBR 16).",
+      "sources": [
+        { "kind": "confluence", "label": "AIR & DBR Versions" }
+      ]
+    },
+    {
+      "text": "New feature work happens on the latest AIR line only. Older AIR versions receive hotfixes for urgent bugs only.",
+      "sources": [
+        { "kind": "confluence", "label": "AIR & DBR Versions" }
+      ]
+    },
+    {
+      "text": "The DBR version is encoded in the Databricks cluster-policy tag, e.g. <code>AIR:3.0.16 - 17.3.x-scala2.13 - Pipeline</code>.",
+      "sources": [
+        { "kind": "confluence", "label": "AIR & DBR Versions" }
+      ]
+    },
+    {
+      "warn": true,
+      "text": "⚠️ <b>Unverified:</b> whether an older AIR line still maps to <code>DBR 11.3-LTS</code> — one prior answer included it, another did not. Confirm live before relying on it.",
+      "sources": [
+        { "kind": "unverified", "label": "conflict — reconcile" }
+      ]
+    }
+  ],
+
+  "matrix": {
+    "title": "AIR → DBR mapping",
+    "subtitle": "All currently supported AIR lines and their pinned DBR LTS",
+    "headers": ["AIR line", "DBR LTS", "DBR EoS"],
+    "rows": [
+      {
+        "cells": [
+          { "value": "AIR 3.x", "sub": "current — new development" },
+          { "value": "DBR 17.3-LTS" },
+          { "value": "Oct 22, 2028" }
+        ],
+        "sources": [{ "kind": "confluence", "label": "AIR & DBR Versions" }]
+      },
+      {
+        "cells": [
+          { "value": "AIR 2.x" },
+          { "value": "DBR 15.4-LTS" },
+          { "value": "Aug 19, 2027" }
+        ],
+        "sources": [{ "kind": "confluence", "label": "AIR & DBR Versions" }]
+      },
+      {
+        "cells": [
+          { "value": "AIR 1.x" },
+          { "value": "DBR 14.3-LTS" },
+          { "value": "Feb 1, 2027" }
+        ],
+        "sources": [{ "kind": "confluence", "label": "AIR & DBR Versions" }]
+      },
+      {
+        "cells": [
+          { "value": "AIR 0.13.x" },
+          { "value": "DBR 13.3-LTS" },
+          { "value": "Aug 22, 2026 ⚠️" }
+        ],
+        "sources": [{ "kind": "confluence", "label": "AIR & DBR Versions" }]
+      }
+    ]
+  },
+
+  "sources": [
+    {
+      "title": "Confluence",
+      "items": [
+        { "title": "AIR & Databricks Runtime Versions", "meta": "canonical version matrix" }
+      ]
+    },
+    {
+      "title": "Slack",
+      "items": [
+        { "title": "#air-help", "meta": "prior answer referencing the same Confluence page" },
+        { "title": "#nextgen-release", "meta": "AIR 3.0.0 release announcement (DBR 17.x upgrade)" }
+      ]
+    },
+    {
+      "title": "Repo / catalog",
+      "items": [
+        { "title": "config/knowledge-faq.yaml", "meta": "seed entry — status: unverified_seed; live re-verification required" }
+      ]
+    }
+  ],
+
+  "conflicts": [
+    "Prior bot answers disagree on whether an older AIR line still maps to DBR 11.3-LTS. Prefer the more recent first-hand source per 020-context-accuracy.mdc; if unresolvable, mark ⚠️ unverified and lower confidence."
+  ],
+
+  "confidence": {
+    "level": "Medium",
+    "verified": "AIR → DBR mapping for 3.x / 2.x / 1.x / 0.13.x corroborated by the Confluence version matrix and a #nextgen-release announcement.",
+    "not_verified": "The DBR 11.3-LTS mapping and the exact ECR-tag retention count. Code-side check on ng-abacus-insights-runtime not required for a version-mapping question."
+  },
+
+  "for_you": [
+    {
+      "kind": "lookup",
+      "text": "<b>Self-service:</b> open Databricks → Compute → <b>Cluster Policies</b>. The DBR is encoded in the policy tag (e.g. <code>AIR:3.0.16 - 17.3.x-scala2.13 - Pipeline</code>)."
+    },
+    {
+      "kind": "recommend",
+      "text": "<b>Recommendation:</b> if you are on <b>AIR 0.13.x</b> (DBR 13.3-LTS, EoS Aug 22 2026), schedule an upgrade to AIR 3.x now — DBR 13.3 support ends within a month."
+    }
+  ]
+}

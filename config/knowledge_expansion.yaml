@@ -27,7 +27,6 @@ trigger_when: >
 confluence:
   preferred_spaces:
     - Abacus NextGen 2.0
-  max_pages_per_turn: 3
 
   # -------------------------------------------------------------------------
   # Fallback Knowledge Links — organized by section

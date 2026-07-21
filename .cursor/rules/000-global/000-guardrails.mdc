@@ -84,10 +84,28 @@ When attachments are processed, always include a PHI Protection Summary in your 
 - If you cannot find related past issues → say: "No related issues found. Assignee will investigate based on ticket priority."
 - NEVER fabricate ticket keys, Confluence URLs, root causes, or solution steps.
 - If a root cause is not documented in past issues, do NOT guess one.
+- **Drop-if-unsourced**: if a specific claim (a version, a date, a count, a config
+  value, an EoS) cannot be tied to a first-hand source, either omit it or mark it
+  explicitly `⚠️ unverified` — never present it as fact.
 
 ## Source Attribution
 - Every recommendation must include its source: `[PRODOPS-1234]`, `[Confluence: Page Title](url)`, or `[Slack: #channel](permalink)`.
 - Unsourced claims are prohibited.
+- **Per-claim, not blanket**: attach the source to each individual claim. A single
+  citation at the bottom of a multi-fact answer does NOT satisfy this rule.
+
+## Confidence Calibration
+Confidence must scale with the evidence, not with how sure the model *feels*:
+- **High** — corroborated by ≥ 2 independent first-hand sources, none in conflict.
+- **Medium** — supported by exactly 1 first-hand source, OR minor unresolved gaps.
+- **Low** — indirect/partial sourcing, stale sources, or an unresolved conflict.
+- Always state, alongside the level, **what was verified and what was not**
+  (e.g. "code path not verified — MCP unavailable, not required for this question").
+- A single Confluence page ⇒ Medium at most. Do not claim High off one source.
+
+## Source Conflicts
+- If two sources disagree, surface BOTH, flag the conflict, and prefer the more
+  recent (per `000-context-accuracy.mdc`). Never silently pick one.
 
 ## Token Discipline
 - Prefer bullet points and tables over paragraphs.

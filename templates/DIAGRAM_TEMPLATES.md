@@ -34,8 +34,10 @@ checks are considered low quality and should not be posted.
 
 ### 1.2 Structural requirements
 
-Every diagram MUST contain these five semantic zones (as subgraphs, node
-clusters, or clearly labeled sections). Missing zones = diagram is incomplete:
+Every diagram MUST contain five semantic zones — but the zone set depends on
+intent (see `prodops-workflow-gate` Step 0.5).
+
+#### For `ticket_op` diagrams (Templates 1–6):
 
 1. **Context** — Who reported, when, which client, which service.
 2. **Trigger / Symptom** — What went wrong; quote the error or symptom.
@@ -43,6 +45,28 @@ clusters, or clearly labeled sections). Missing zones = diagram is incomplete:
 4. **Resolution Steps** — Numbered, concrete actions. Include the actual
    command, config path, UI navigation, or ticket to file — not "execute fix".
 5. **Verification** — How the assignee confirms the fix worked.
+
+#### For `knowledge_query` diagrams (Template 7 — system/workflow explainer):
+
+Ticket zones do not apply (there is no ticket, no symptom, no root cause).
+The five required zones are:
+
+1. **Purpose & Owner** — What this system/workflow does in one line, owning team,
+   canonical Confluence page.
+2. **Inputs / Triggers** — What starts it (event, cron, human action, upstream
+   artifact). Include cadence or schedule if documented.
+3. **Stages / Orchestration** — Sequential (or parallel) steps. Each stage names
+   the actual tool/service/repo/artifact — not a verb like "process".
+4. **Outputs & Guarantees** — What it produces (artifact, table, deployment
+   state) and its documented SLA/consistency guarantee, if any.
+5. **Observability & Failure Modes** — Where you watch it (dashboard, logs,
+   Slack channel), documented common failure(s), and the documented escape hatch
+   (rollback, manual re-run, on-call rotation).
+
+Every stage node MUST carry a per-claim source (Confluence page name or
+`PRODOPS-XXXX`). Unsourced stages must be omitted or marked `⚠️ unverified` —
+the same discipline as the `knowledge_query` text answer
+(see `000-guardrails.mdc`). Never invent commands, filenames, or paths.
 
 ### 1.3 Label quality rules
 
@@ -540,6 +564,149 @@ flowchart TD
     style V3 fill:#8BC34A,stroke:#558B2F,color:#000
     style V4 fill:#00D9FF,stroke:#0097A7,color:#000
 ```
+
+---
+
+### Template 7 — System / Workflow Explainer  (`flowchart LR`) — fallback only
+
+> **Preferred pipeline for `knowledge_query` diagrams is
+> `scripts/diagram_render/templates/knowledge_answer.html.j2`** — a Jinja2 +
+> Playwright infographic card that produces a polished, information-dense
+> answer without the readability problems of a boxes-and-arrows Mermaid graph
+> for a knowledge answer. See `scripts/diagram_render/README.md`.
+>
+> Use this Mermaid template only when the answer genuinely needs a
+> boxes-and-arrows workflow flow that the HTML card cannot express, and the
+> Playwright renderer is unavailable.
+
+Use for "explain how X works" questions where X is a system, pipeline, workflow,
+release process, or architecture (e.g. "explain the Seiji Deploy workflow",
+"how does AIR CD deploy?", "walk me through the Airbyte sync pipeline").
+
+**Rendering choices (why this differs from Templates 1–6):**
+
+- `flowchart LR` (left-to-right), not `TD`. A workflow reads naturally as a
+  pipeline; TD makes Slack render a tall, skinny, unreadable column.
+- Five subgraphs arranged **left-to-right**: Purpose → Inputs → Stages →
+  Outputs → Observability. Never a stack of narrow vertical subgraphs.
+- Legend at the **bottom**, not as a floating side column.
+- Max ~ 15 nodes total (fewer than Templates 1–6). Slack thumbnails need air.
+- Every stage node cites a Confluence page / ticket / channel by name.
+  Unsourced stage → omit or mark `⚠️ unverified`.
+- Labels ≤ 3 lines of `<br/>`. Keep each line ≤ ~ 32 chars so nothing gets
+  cropped in a Slack thumbnail.
+
+#### 7a. Skeleton
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#4CAF50','primaryTextColor':'#ffffff','lineColor':'#2196F3',
+  'background':'#1E1E1E','mainBkgColor':'#2D2D2D','textColor':'#FFFFFF',
+  'edgeLabelBackground':'#1E1E1E','clusterBkg':'#2A2A2A','clusterBorder':'#4CAF50',
+  'defaultLinkColor':'#90CAF9','fontSize':'14px'
+}}}%%
+flowchart LR
+    TITLE["🤖 <b>System</b> — one-line purpose<br/>👥 Owner: team<br/>📖 Confluence: canonical page"]
+
+    subgraph Inputs["📥 Inputs / Triggers"]
+        I1["🎯 Trigger event<br/>e.g. tag push / cron / manual<br/>📅 cadence if documented"]
+        I2["📁 Required inputs<br/>e.g. config file / artifact"]
+    end
+
+    subgraph Stages["⚙️ Stages (Orchestration)"]
+        direction TB
+        S1["1. Stage name<br/>Tool / repo<br/>📖 Confluence: page"]
+        S2["2. Stage name<br/>Tool / repo<br/>📖 Confluence: page"]
+        S3["3. Stage name<br/>Tool / repo<br/>📖 Confluence: page"]
+    end
+
+    subgraph Outputs["📤 Outputs & Guarantees"]
+        O1["✅ What it produces<br/>e.g. deployed cluster / artifact"]
+        O2["📊 Documented SLA<br/>e.g. RTO / freshness / rollout"]
+    end
+
+    subgraph Obs["🩺 Observability & Failure Modes"]
+        M1["📊 Where to watch<br/>dashboard / logs / channel"]
+        F1["❗ Documented failure mode<br/>+ owner"]
+        R1["🔙 Escape hatch<br/>rollback / rerun / on-call"]
+    end
+
+    TITLE --> I1
+    I1 --> S1
+    I2 --> S1
+    S1 --> S2 --> S3
+    S3 --> O1
+    S3 --> O2
+    O1 --> M1
+    M1 --> F1 --> R1
+
+    subgraph Legend["🗂️ Legend"]
+        direction LR
+        L1["📥 Input"]:::inp
+        L2["⚙️ Stage"]:::stg
+        L3["📤 Output"]:::out
+        L4["🩺 Observability"]:::obs
+        L5["❗ Failure"]:::fail
+    end
+
+    classDef inp fill:#00D9FF,stroke:#0097A7,color:#000
+    classDef stg fill:#009688,stroke:#004D40,color:#fff
+    classDef out fill:#4CAF50,stroke:#2E7D32,color:#fff
+    classDef obs fill:#3F51B5,stroke:#1A237E,color:#fff
+    classDef fail fill:#F44336,stroke:#B71C1C,color:#fff
+
+    style TITLE fill:#9C27B0,stroke:#4A148C,color:#fff
+    style I1 fill:#00D9FF,stroke:#0097A7,color:#000
+    style I2 fill:#FFC107,stroke:#F57F17,color:#000
+    style S1 fill:#009688,stroke:#004D40,color:#fff
+    style S2 fill:#009688,stroke:#004D40,color:#fff
+    style S3 fill:#009688,stroke:#004D40,color:#fff
+    style O1 fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style O2 fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style M1 fill:#3F51B5,stroke:#1A237E,color:#fff
+    style F1 fill:#F44336,stroke:#B71C1C,color:#fff
+    style R1 fill:#FF9800,stroke:#E65100,color:#000
+```
+
+#### 7b. How to fill this in (mandatory discipline)
+
+The skeleton above is a shape, not content. To produce the actual diagram for
+a `knowledge_query` (e.g. "explain the Seiji Deploy workflow"):
+
+1. First run the `knowledge_query` K1–K2 search (workflow-gate + knowledge-expansion):
+   locate the canonical Confluence page for the system, plus at least one
+   corroborating source (release announcement, Slack pin, related PRODOPS ticket).
+2. Extract, from those first-hand sources ONLY:
+   - the one-line purpose and owning team → `TITLE`;
+   - the actual trigger(s) and cadence → `Inputs`;
+   - the real orchestration stages, in order, with the real tool/repo/service
+     names → `Stages`. **Do not paraphrase into generic verbs.** If a stage's
+     name/tool cannot be sourced, omit that stage.
+   - the documented outputs and any SLA/guarantee text → `Outputs`;
+   - the documented dashboard/log/Slack-channel, common failure modes, and
+     rollback procedure → `Observability`.
+3. Attach a per-stage source citation (Confluence page title, `PRODOPS-XXXX`,
+   or `#channel`) inside each stage node. Mirrors the text answer's per-claim
+   attribution rule.
+4. If a subgraph would have < 1 sourced node → remove that subgraph and note
+   the gap in the text answer instead of inventing content.
+5. Confidence for the diagram inherits from the K3 judge scorecard — a
+   single-source diagram caps at Medium and must say so in the text answer.
+
+#### 7c. Anti-patterns specific to this template
+
+- ❌ Using `flowchart TD` — produces the tall, narrow, unreadable layout.
+- ❌ Legend as a floating vertical column at the far left/right. Put it at the
+  bottom as a horizontal subgraph.
+- ❌ Reusing the `ticket_op` zones (Symptom / Root Cause / Verification) for a
+  workflow explanation. There is no ticket, no symptom, no root cause.
+- ❌ Filling stages with paraphrased verbs ("Merge to release branches",
+  "Update default") when the source page has a concrete tool name. Use the
+  concrete tool.
+- ❌ Node labels that get cropped in Slack: keep each `<br/>` line ≤ ~ 32 chars.
+- ❌ Inventing commands, filenames, dates, or repo paths to satisfy the ≥ 8
+  node minimum. If the sourced material only supports 6 nodes, post 6 nodes
+  and lower the diagram's confidence.
 
 ---
 

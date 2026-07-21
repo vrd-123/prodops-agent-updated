@@ -1,0 +1,68 @@
+# ============================================================================
+# Knowledge FAQ Registry — recurring knowledge_query answers
+# ============================================================================
+# Path: config/knowledge-faq.yaml
+#
+# Read by: prodops-workflow-gate Step K1 (Query Intake), knowledge-expansion skill.
+#
+# Purpose: Cache canonical answers to STABLE, frequently-asked questions
+#          (e.g. "what DBR version does AIR support?") so recurring answers are
+#          consistent and fast.
+#
+# HARD RULES (non-negotiable, see 000-guardrails.mdc):
+#   - A cached answer is a SEED, never a substitute for verification.
+#     Step K2 MUST re-verify every entry against its cited live sources before
+#     the answer is delivered. If a source cannot be reached or has changed,
+#     the cache entry is treated as stale → fall back to full knowledge-expansion.
+#   - Every fact carries a per-claim source. No fabricated URLs / keys / dates.
+#   - `last_verified` older than `max_age_days` → MUST re-verify (do not trust).
+#   - Entries marked `status: unverified_seed` MUST be confirmed live before use
+#     and their confidence is capped at Medium until verified against ≥ 2 sources.
+# ============================================================================
+
+registry_config:
+  max_age_days: 30           # entries older than this must be re-verified live
+  min_sources_for_high: 2    # confidence caps at Medium below this (per guardrails)
+  default_confidence_when_seed: Medium
+
+faqs:
+  - id: air-dbr-version-support
+    question: "What version of DBR (Databricks Runtime) does AIR currently support?"
+    keywords: ["DBR", "Databricks Runtime", "AIR version", "LTS", "runtime version"]
+    topic: "AIR / DBR version support"
+    # status: unverified_seed → the mapping below was drawn from prior bot answers,
+    # NOT yet confirmed against a first-hand source by this registry. K2 MUST
+    # verify against the sources listed before delivering, and reconcile any
+    # conflict (e.g. whether an older AIR maps to DBR 11.3) per 000-context-accuracy.mdc.
+    status: unverified_seed
+    last_verified: null
+    tldr: "Current AIR (3.x) runs on DBR 17.3-LTS; each AIR major maps to exactly one DBR LTS."
+    facts:
+      - claim: "AIR 3.x → DBR 17.3-LTS (current line for new development)"
+        confidence: Medium
+      - claim: "AIR 2.x → DBR 15.4-LTS"
+        confidence: Medium
+      - claim: "AIR 1.x → DBR 14.3-LTS"
+        confidence: Medium
+      - claim: "AIR 0.13.x → DBR 13.3-LTS"
+        confidence: Medium
+      - claim: "Abacus skips some DBR releases (e.g. no AIR based on DBR 16)"
+        confidence: Medium
+    conflicts_to_resolve:
+      - "Older-AIR → DBR 11.3-LTS was claimed by one bot but not the other. Confirm
+         whether an 11.3-based AIR line is still in scope before including it."
+    sources:
+      # Titles only — resolve to live URLs during K2. Do NOT invent URLs here.
+      - type: confluence
+        title: "AIR & Databricks Runtime Versions"
+        note: "Canonical version matrix. Resolve URL live; treat as primary source."
+      - type: slack
+        channel: "#air-help"
+        note: "Prior answer referencing the same Confluence matrix."
+      - type: slack
+        channel: "#nextgen-release"
+        note: "AIR 3.0.0 release announcement (DBR 17.x upgrade)."
+    self_service:
+      - "Databricks → Compute → Cluster Policies — the DBR is encoded in the policy/tag name."
+    personalized_next_step:
+      - "If on an AIR line whose DBR is near/past EoS → plan an upgrade to the current AIR."

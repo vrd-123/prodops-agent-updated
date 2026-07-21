@@ -8,15 +8,29 @@ alwaysApply: true
 
 ## Unconditional — applies to every task, every time
 
-The prodops-workflow-gate defines 7 steps (0–6). You MUST execute every applicable step in order.
+The prodops-workflow-gate has TWO intents (see Step 0.5). You MUST first detect
+the intent, then execute every step **for that intent** in order. You may only
+skip a step because the OTHER intent owns it — never as a shortcut.
 
-### Hard stops (never skip):
+- `ticket_op` → Steps 1–6 (below). Validation and Triage are mandatory.
+- `knowledge_query` → Steps K1–K4. Validation (Step 2) and Triage (Step 3) are
+  **N/A** (there is no ticket to validate or route) — this is the ONLY sanctioned
+  skip. Knowledge Search (K2) and Judge (K3) are still mandatory; never answer
+  from model knowledge alone.
+
+### Hard stops for `ticket_op` (never skip):
 1. **Ticket Intake** (Step 1) — Always fetch and parse the ticket. Never assume you know the contents.
 2. **Validation** (Step 2) — Always run the SoP checklist. Even if the ticket "looks complete," verify programmatically.
 3. **Triage** (Step 3) — Always classify and route. Never skip because "it's obvious."
 4. **Solution Search** (Step 4) — Always search past tickets and Confluence. Never skip because "I already know the answer."
 5. **Judge** (Step 5) — Always evaluate output quality before posting.
 6. **Comment** (Step 6) — Always format the final structured comment.
+
+### Hard stops for `knowledge_query` (never skip):
+1. **Query Intake** (K1) — Always parse the question + entities and check the FAQ registry.
+2. **Knowledge Search** (K2) — Always search first-hand sources; exhaust Confluence → Jira → Slack within limits. Never answer from memory.
+3. **Judge** (K3) — Always evaluate before answering.
+4. **Answer** (K4) — Always format with TL;DR, per-claim sources, calibrated confidence, and next steps.
 
 ### Why this matters:
 - Skipping validation means incomplete tickets reach handlers.

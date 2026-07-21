@@ -30,3 +30,7 @@ reports/
 .env
 .env.local
 workspace/attachments/
+
+.venv-render/
+.pw-browsers/
+reports/samples/

@@ -37,12 +37,6 @@ PHI / PII Protection (HIPAA):
     - These checks run entirely in Python — no content reaches the LLM
       until it has passed all PHI gates.
 
-Environment variables (set in .env at repo root):
-    JIRA_BASE_URL       e.g. https://abacusinsights.atlassian.net
-    JIRA_USER_EMAIL     your Atlassian login email
-    JIRA_API_TOKEN      API token from id.atlassian.com
-      — OR —
-    JIRA_PAT            Personal Access Token (Data Center)
 """
 
 from __future__ import annotations
