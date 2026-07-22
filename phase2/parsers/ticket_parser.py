@@ -275,24 +275,24 @@ def _classify_s3_uris(
     source = []
     dest = []
 
-    # Method 1: Explicit labels
+    source_labels = ["copy from", "source", "from:", "sync from",
+                     "prod -", "prd -", "prod-", "prod–"]
+    dest_labels = ["copy to", "target", "to:", "dest", "destination",
+                   "dev -", "stg -", "dev-", "stg-", "stage -"]
+
+    # Method 1: Explicit labels — use nearest label to avoid misclassifying
+    # multi-destination tickets where an earlier "copy from" appears in window.
     for uri in uris:
         uri_pos = description.find(uri)
         if uri_pos < 0:
             continue
         context_before = description[max(0, uri_pos - 120):uri_pos].lower()
-
-        source_labels = ["copy from", "source", "from:", "sync from",
-                         "prod -", "prd -", "prod-", "prod–"]
-        dest_labels = ["copy to", "target", "to:", "dest", "destination",
-                       "dev -", "stg -", "dev-", "stg-", "stage -"]
-
-        is_source = any(lbl in context_before for lbl in source_labels)
-        is_dest = any(lbl in context_before for lbl in dest_labels)
-
-        if is_source and not is_dest:
+        classification = _nearest_label_classification(
+            context_before, source_labels, dest_labels
+        )
+        if classification == "source":
             source.append(uri)
-        elif is_dest and not is_source:
+        elif classification == "dest":
             dest.append(uri)
 
     if source and dest:
@@ -316,6 +316,24 @@ def _classify_s3_uris(
         return [uris[0]], uris[1:]
 
     return uris, []
+
+
+def _nearest_label_classification(
+    context_before: str,
+    source_labels: list[str],
+    dest_labels: list[str],
+) -> str | None:
+    """Return source/dest based on the label closest to the URI."""
+    ctx = context_before.lower()
+    best_source = max((ctx.rfind(lbl) for lbl in source_labels), default=-1)
+    best_dest = max((ctx.rfind(lbl) for lbl in dest_labels), default=-1)
+    if best_source < 0 and best_dest < 0:
+        return None
+    if best_source > best_dest:
+        return "source"
+    if best_dest > best_source:
+        return "dest"
+    return None
 
 
 def _extract_env_from_uri(uri: str) -> str:
