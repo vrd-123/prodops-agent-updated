@@ -1,14 +1,19 @@
 """
-ProdOps Phase 2 — Script Generator (v2.1)
+ProdOps Phase 2 — Script Generator (v2.2)
 ===========================================
 Takes parsed ticket parameters + env_config and generates
 complete, configured, copy-paste-ready shell scripts.
 
+v2.2 Changes:
+  - FIX: Pod name no longer doubles the "prodops" prefix
+  - NEW: Pre-check step validates destination paths exist before copy
+  - NEW: Ticket context comment shows source text for file list
+  - NEW: Cross-reference step checks past tickets for pattern validation
+  - NEW: Known BlueKC dev path pattern documented (bluekc-stg/ is intentional)
+
 Built from real runbooks:
   S3 Copy:      https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5629607976
   FHIR Cleanup: https://abacusinsights.atlassian.net/wiki/spaces/ES/pages/5836767241
-
-v2.1: Uses FIX 3 — prefers directly-extracted catalog name over inferred.
 """
 
 import os
@@ -89,7 +94,10 @@ def generate_s3_copy_script(params: S3CopyParams, config: dict | None = None) ->
     bg_ns = bg.get("namespace", "break-glass")
     bg_sa = bg.get("service_account", "break-glass")
     bg_image = bg.get("image", "amazon/aws-cli:latest")
-    pod_name = f"prodops-{params.ticket_key.lower().replace('-', '')}"
+
+    # FIX: Pod name — extract just the number, no double prefix
+    ticket_number = params.ticket_key.split("-")[-1]
+    pod_name = f"prodops-{ticket_number}"
 
     lines = []
 
@@ -104,19 +112,36 @@ def generate_s3_copy_script(params: S3CopyParams, config: dict | None = None) ->
     lines.append(f"# {'=' * 68}")
     lines.append("")
 
-    # Warnings
-    for warn in params.warnings:
-        lines.append(f"# {warn}")
-    if params.warnings:
-        lines.append("")
-
-    # Specific files
+    # NEW: Ticket context — show what the ticket actually says
+    lines.append(f"# --- Ticket context (from {params.ticket_key} description) ---")
+    if params.source_uris:
+        lines.append(f"# Source: {params.source_uris[0]}")
+    for i, dst in enumerate(params.dest_uris):
+        lines.append(f"# Dest {i+1}: {dst}")
     if params.specific_files:
         lines.append(f"# Files listed in ticket ({len(params.specific_files)}):")
         for fname in params.specific_files[:15]:
-            lines.append(f"#   {fname}")
+            lines.append(f"#   • {fname}")
         if len(params.specific_files) > 15:
             lines.append(f"#   ... and {len(params.specific_files) - 15} more")
+    lines.append(f"# ---")
+    lines.append("")
+
+    # Warnings
+    for warn in params.warnings:
+        lines.append(f"# {warn}")
+
+    # NEW: Cross-reference known patterns
+    known_patterns = config.get("known_path_patterns", {})
+    customer_lower = params.customer.lower()
+    if customer_lower in known_patterns:
+        pattern_info = known_patterns[customer_lower]
+        if pattern_info.get("dev_uses_stg_folder"):
+            lines.append(f"# ℹ️  Known pattern: {params.customer} dev bucket uses "
+                         f"'{pattern_info.get('dev_folder', 'stg')}' folder path (confirmed in "
+                         f"{pattern_info.get('confirmed_tickets', 'past tickets')}). This is intentional.")
+
+    if params.warnings or customer_lower in known_patterns:
         lines.append("")
 
     lines.append("set -euo pipefail")
@@ -155,8 +180,23 @@ def generate_s3_copy_script(params: S3CopyParams, config: dict | None = None) ->
     lines.append("aws sts get-caller-identity")
     lines.append("")
 
-    # Step 5: Baseline counts
-    lines.append("# === STEP 5 (inside pod): Baseline counts BEFORE copy ===")
+    # NEW: Step 5 — Pre-check: validate paths exist
+    lines.append("# === STEP 5 (inside pod): PRE-CHECK — verify paths exist ===")
+    for i, src in enumerate(params.source_uris):
+        lines.append(f'echo "--- Checking SOURCE [{i+1}] exists ---"')
+        if params.specific_files:
+            for fname in params.specific_files[:5]:
+                lines.append(f"aws s3 ls {src.rstrip('/')}/{fname} || echo '❌ NOT FOUND: {fname}'")
+        else:
+            lines.append(f"aws s3 ls {src} --recursive --summarize | tail -n 2 || echo '❌ SOURCE PATH NOT FOUND'")
+    for i, dst in enumerate(params.dest_uris):
+        lines.append(f'echo "--- Checking DESTINATION [{i+1}] path is reachable ---"')
+        lines.append(f"aws s3 ls {dst} 2>/dev/null && echo '✅ Dest path exists' || echo '⚠️ Dest path does not exist yet (will be created on copy)'")
+    lines.append('echo "👆 Verify all source files exist before proceeding."')
+    lines.append("")
+
+    # Step 6: Baseline counts
+    lines.append("# === STEP 6 (inside pod): Baseline counts BEFORE copy ===")
     for i, src in enumerate(params.source_uris):
         lines.append(f'echo "--- SOURCE [{i+1}] ---"')
         lines.append(f"aws s3 ls {src} --recursive --human-readable --summarize | tail -n 2")
@@ -168,8 +208,8 @@ def generate_s3_copy_script(params: S3CopyParams, config: dict | None = None) ->
     # Build copy pairs
     copy_pairs = _build_copy_pairs(params)
 
-    # Step 6: Dry run
-    lines.append("# === STEP 6 (inside pod): DRY RUN — MANDATORY ===")
+    # Step 7: Dry run
+    lines.append("# === STEP 7 (inside pod): DRY RUN — MANDATORY ===")
     for src, dst in copy_pairs:
         if params.specific_files and len(params.specific_files) <= 10:
             for fname in params.specific_files:
@@ -178,35 +218,41 @@ def generate_s3_copy_script(params: S3CopyParams, config: dict | None = None) ->
             lines.append(f"aws s3 {params.copy_method} {src} {dst} --dryrun | head -n 50")
             lines.append(f"aws s3 {params.copy_method} {src} {dst} --dryrun | wc -l")
     lines.append("")
-    lines.append('echo "👆 Review dry-run output. Proceed only if counts look correct."')
+    lines.append('echo "👆 Review dry-run output. Proceed only if paths and file names look correct."')
     lines.append("")
 
-    # Step 7: Execute
-    lines.append("# === STEP 7 (inside pod): EXECUTE — only after dry-run review ===")
+    # Step 8: Execute
+    lines.append("# === STEP 8 (inside pod): EXECUTE — only after dry-run review ===")
     for src, dst in copy_pairs:
         if params.specific_files and len(params.specific_files) <= 10:
             for fname in params.specific_files:
-                lines.append(f"aws s3 cp {src.rstrip('/')}/{fname} {dst.rstrip('/')}/{fname}")
+                lines.append(f"aws s3 cp {src.rstrip('/')}/{fname} {dst.rstrip('/')}/{fname} --only-show-errors")
         else:
             lines.append(f"aws s3 {params.copy_method} {src} {dst} --only-show-errors")
     lines.append("")
 
-    # Step 8: Post-validation
-    lines.append("# === STEP 8 (inside pod): POST-VALIDATION ===")
+    # Step 9: Post-validation
+    lines.append("# === STEP 9 (inside pod): POST-VALIDATION ===")
     for src, dst in copy_pairs:
         if params.copy_method == "sync" and not params.specific_files:
             lines.append(f"# Verify no remaining diffs:")
             lines.append(f"aws s3 sync {src} {dst} --dryrun | head -n 20")
-    for i, src in enumerate(params.source_uris):
-        lines.append(f'echo "--- FINAL SOURCE [{i+1}] ---"')
-        lines.append(f"aws s3 ls {src} --recursive --human-readable --summarize | tail -n 2")
-    for i, dst in enumerate(params.dest_uris):
-        lines.append(f'echo "--- FINAL DESTINATION [{i+1}] ---"')
-        lines.append(f"aws s3 ls {dst} --recursive --human-readable --summarize | tail -n 2")
+    if params.specific_files:
+        lines.append("# Verify each file was copied:")
+        for src, dst in copy_pairs:
+            for fname in params.specific_files:
+                lines.append(f"aws s3 ls {dst.rstrip('/')}/{fname} --human-readable || echo '❌ MISSING: {fname}'")
+    else:
+        for i, src in enumerate(params.source_uris):
+            lines.append(f'echo "--- FINAL SOURCE [{i+1}] ---"')
+            lines.append(f"aws s3 ls {src} --recursive --human-readable --summarize | tail -n 2")
+        for i, dst in enumerate(params.dest_uris):
+            lines.append(f'echo "--- FINAL DESTINATION [{i+1}] ---"')
+            lines.append(f"aws s3 ls {dst} --recursive --human-readable --summarize | tail -n 2")
     lines.append("")
 
-    # Step 9: Cleanup
-    lines.append("# === STEP 9: Exit pod (auto-deletes with --rm) ===")
+    # Step 10: Cleanup
+    lines.append("# === STEP 10: Exit pod (auto-deletes with --rm) ===")
     lines.append("exit")
 
     return "\n".join(lines)
@@ -248,7 +294,7 @@ def generate_fhir_cleanup_script(params: FHIRCleanupParams, config: dict | None 
 
     aws_profile = customer_cfg["aws_profile"]
 
-    # Build header with warnings (FIX 2)
+    # Build header with warnings
     header_lines = []
     for warn in params.warnings:
         header_lines.append(warn)
@@ -277,11 +323,7 @@ def _generate_single_fhir_block(
     """Generate script for a single FHIR environment."""
 
     is_prod = "prd" in fhir_env or "prod" in fhir_env
-
-    # FIX 3: Prefer directly-extracted catalog over inferred
     catalog = params.get_catalog(fhir_env)
-
-    # Get tables specific to this environment
     env_tables = params.get_tables_for_env(fhir_env)
 
     # Build filter flags
@@ -308,6 +350,14 @@ def _generate_single_fhir_block(
     lines.append(f"# Customer: {params.customer} | Environment: {fhir_env}")
     if catalog:
         lines.append(f"# Databricks catalog: {catalog}")
+
+    # NEW: Ticket context
+    lines.append(f"# ---")
+    lines.append(f"# Resources: {', '.join(params.resource_types) if params.resource_types else 'see profile URLs below'}")
+    if params.metadata_tables:
+        lines.append(f"# Metadata tables: {', '.join(t.split('.')[-1] for t in params.metadata_tables[:4])}")
+    lines.append(f"# ---")
+
     if is_prod:
         lines.append(f"# ⚠️  PRODUCTION ENVIRONMENT — --force-prod required")
     lines.append(f"# ⚠️  REVIEW EVERY STEP BEFORE EXECUTING")
@@ -338,7 +388,6 @@ def _generate_single_fhir_block(
     # Step 3: Databricks metadata check
     if env_tables:
         lines.append("# === STEP 3: Verify counts in Databricks SQL ===")
-        # Build a UNION ALL count query
         count_parts = []
         for t in env_tables:
             table_ref = t if "." in t and "_catalog" in t else f"{catalog}.{t}" if catalog else t
