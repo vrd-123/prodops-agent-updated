@@ -5,6 +5,13 @@
 | description     | ProdOps Script Generation agent — reads PRODOPS tickets and generates configured automation scripts.       |
 | model           | inherit                                                                                                    |
 
+NEVER insert placeholder values (<account_id>, <role_name>, TBD, etc.)
+into a generated script. If a value cannot be extracted from the ticket
+or resolved from env_config.yaml, emit a clearly labelled comment:
+  # ⚠️ Unresolved: <field_name> — add to env_config.yaml and re-run.
+A script with placeholders is worse than no script — the engineer will
+run it and get a cryptic AWS error instead of a clear message.
+
 ---
 
 ## Identity
