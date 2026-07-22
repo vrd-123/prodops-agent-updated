@@ -281,14 +281,22 @@ def _classify_s3_uris(
         if uri_pos < 0:
             continue
         context_before = description[max(0, uri_pos - 120):uri_pos].lower()
+        immediate = description[max(0, uri_pos - 40):uri_pos].lower()
+        # Strip embedded S3 URIs so env tokens inside paths (e.g. data-lake-prd-)
+        # do not false-match prod/prd source labels.
+        context_no_uris = re.sub(r"s3://\S+", " ", context_before)
 
-        source_labels = ["copy from", "source", "from:", "sync from",
-                         "prod -", "prd -", "prod-", "prod–"]
-        dest_labels = ["copy to", "target", "to:", "dest", "destination",
-                       "dev -", "stg -", "dev-", "stg-", "stage -"]
+        explicit_source = ["copy from", "source:", "sync from", "from:"]
+        explicit_dest = ["copy to", "target:", "to:", "dest:", "destination"]
+        env_source = ["prod -", "prd -", "prod-", "prod–"]
+        env_dest = ["dev -", "stg -", "dev-", "stg-", "stage -"]
 
-        is_source = any(lbl in context_before for lbl in source_labels)
-        is_dest = any(lbl in context_before for lbl in dest_labels)
+        is_source = any(lbl in immediate for lbl in explicit_source) or any(
+            lbl in context_no_uris for lbl in env_source
+        )
+        is_dest = any(lbl in immediate for lbl in explicit_dest) or any(
+            lbl in context_no_uris for lbl in env_dest
+        )
 
         if is_source and not is_dest:
             source.append(uri)
@@ -599,22 +607,47 @@ def _fhir_env_to_catalog(fhir_env: str) -> str:
 # Jira Field Extractors
 # ============================================================================
 
+_CUSTOMER_NAMES = (
+    "BCI", "BlueKC", "Medstar", "Gainwell", "Cambia",
+    "PHP", "BCBSMA", "BCBSNC", "Clover",
+)
+
+
 def _get_customer(ticket: dict) -> str:
     """
     Extract customer name from customfield_10081.
     Real format: list of dicts [{'value': 'BCI', 'id': '11865'}]
+
+    Falls back to labels and summary prefix when the custom field is empty
+    (common on older PRODOPS tickets such as PRODOPS-3415).
     """
     fields = ticket.get("fields", {})
     cf = fields.get("customfield_10081")
     if isinstance(cf, list) and cf:
         first = cf[0]
         if isinstance(first, dict):
-            return first.get("value", "") or first.get("name", "")
-        return str(first)
-    if isinstance(cf, dict):
-        return cf.get("value", "") or cf.get("name", "")
-    if isinstance(cf, str):
+            value = first.get("value", "") or first.get("name", "")
+            if value:
+                return value
+        elif str(first):
+            return str(first)
+    elif isinstance(cf, dict):
+        value = cf.get("value", "") or cf.get("name", "")
+        if value:
+            return value
+    elif isinstance(cf, str) and cf:
         return cf
+
+    for label in _get_labels(ticket):
+        for name in _CUSTOMER_NAMES:
+            if label.lower() == name.lower():
+                return name
+
+    summary = _get_summary(ticket)
+    for name in _CUSTOMER_NAMES:
+        if summary.lower().startswith(f"{name.lower()}:"):
+            return name
+
     return ""
 
 
